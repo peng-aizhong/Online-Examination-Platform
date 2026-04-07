@@ -1,4 +1,5 @@
 A comprehensive, role-based online examination platform built with modern Java technologies. This system streamlines the entire exam lifecycle, from **question bank management and intelligent paper generation to online proctoring, automated grading, and performance analytics**.
+
 ## 1. 智能组卷与防作弊机制
 
 ### 需求描述
@@ -9,7 +10,6 @@ A comprehensive, role-based online examination platform built with modern Java t
 - **防作弊策略**：
   - 随机打乱题目顺序及选项顺序。
   - 限制切屏次数（如超过3次自动交卷）。
-  - 摄像头定时抓拍与异常行为检测（如多张人脸、离座）。
   - 试题不可回溯（答完一题后禁止返回修改）。
 - **考试异常恢复**：因网络中断等原因退出后，再次进入可恢复答题进度（保存已答记录）。
 
