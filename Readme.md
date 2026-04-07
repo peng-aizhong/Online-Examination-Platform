@@ -2,6 +2,8 @@
 
 A comprehensive, role-based online examination platform built with modern Java technologies. This system streamlines the entire exam lifecycle, from **question bank management and intelligent paper generation to online proctoring, automated grading, and performance analytics**.
 
+we are team
+
 
 # Files
 
