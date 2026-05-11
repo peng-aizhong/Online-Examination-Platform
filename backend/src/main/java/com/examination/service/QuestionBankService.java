@@ -157,3 +157,16 @@ public class QuestionBankService {
         return user;
     }
 }
+
+    /**
+     * 批量导入题目 [Copilot辅助]
+     */
+    public int batchImportQuestions(String username, List<QuestionRequest> requests) {
+        int count = 0;
+        for (QuestionRequest req : requests) {
+            createQuestion(username, req);
+            count++;
+        }
+        log.info("Batch imported {} questions by {}", count, username);
+        return count;
+    }
