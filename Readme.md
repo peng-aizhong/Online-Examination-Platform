@@ -6,7 +6,7 @@
 
 **后端**
 
-- Java 17 + Spring Boot 3.4.5
+- Java 23 + Spring Boot 3.4.5
 - Spring Security + JWT (HS512) 认证
 - Spring Data JPA + Hibernate + MySQL 8
 - BCrypt 密码加密
@@ -94,7 +94,7 @@ Online-Examination-Platform/
 
 ### 环境要求
 
-- JDK 17+
+- JDK 23+
 - Maven 3.6+
 - Node.js 16+
 - MySQL 8.0+
