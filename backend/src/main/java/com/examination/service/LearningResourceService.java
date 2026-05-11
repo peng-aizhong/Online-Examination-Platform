@@ -253,3 +253,15 @@ public class LearningResourceService {
         return user;
     }
 }
+
+    /**
+     * 获取资源统计信息 [Copilot辅助]
+     */
+    public Map<String, Object> getResourceStatistics(String username) {
+        Map<String, Object> stats = new HashMap<>();
+        List<LearningResource> resources = listResourcesForTeacher(username, null, null);
+        stats.put("totalResources", resources.size());
+        stats.put("totalViews", resources.stream().mapToInt(r -> r.getViewCount() != null ? r.getViewCount() : 0).sum());
+        stats.put("totalDownloads", resources.stream().mapToInt(r -> r.getDownloadCount() != null ? r.getDownloadCount() : 0).sum());
+        return stats;
+    }
