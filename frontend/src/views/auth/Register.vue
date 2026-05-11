@@ -214,16 +214,17 @@ const goToLogin = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  width: 100%;
+  flex: 1;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .register-box {
   background: white;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  width: 100%;
-  max-width: 480px;
+  padding: 44px;
+  width: min(92vw, 560px);
 }
 
 .register-header {

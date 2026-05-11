@@ -28,8 +28,8 @@ authApi.interceptors.response.use(
   }
 )
 
-export const login = (username, password) => {
-  return authApi.post('/auth/login', { username, password })
+export const login = (username, password, role) => {
+  return authApi.post('/auth/login', { username, password, role })
 }
 
 export const register = (userData) => {

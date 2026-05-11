@@ -7,13 +7,14 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users", indexes = {
+@Table(name = "user", indexes = {
         @Index(name = "idx_username", columnList = "username", unique = true),
-        @Index(name = "idx_email", columnList = "email", unique = true)
+        @Index(name = "idx_email", columnList = "email", unique = true),
+        @Index(name = "idx_role", columnList = "role")
 })
 @Data
 @NoArgsConstructor
@@ -21,26 +22,34 @@ import java.time.LocalDateTime;
 @Builder
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "user_id", length = 20)
+    private String userId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
-
-    @Column(nullable = false, unique = true)
-    private String email;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "real_name")
-    private String realName;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private UserRole role;
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private UserRole role = UserRole.student;
 
-    @Column(columnDefinition = "TINYINT DEFAULT 1")
+    @Column(length = 100)
+    private String department;
+
+    @Column(unique = true, length = 100)
+    private String email;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 255)
+    private String avatar;
+
+    @Column(name = "is_active")
+    @Builder.Default
     private Boolean active = true;
 
     @CreationTimestamp
@@ -52,9 +61,9 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum UserRole {
-        STUDENT("学生"),
-        TEACHER("教师"),
-        ADMIN("管理员");
+        admin("管理员"),
+        teacher("教师"),
+        student("学生");
 
         private final String label;
 

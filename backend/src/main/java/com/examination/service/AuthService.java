@@ -30,16 +30,30 @@ public class AuthService {
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        if (!user.getActive()) {
+        if (!Boolean.TRUE.equals(user.getActive())) {
             throw new RuntimeException("用户账户已被禁用");
         }
 
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+        String storedPassword = user.getPassword();
+        boolean passwordMatch = false;
+        if (storedPassword != null && storedPassword.startsWith("$2a$")) {
+            passwordMatch = passwordEncoder.matches(loginRequest.getPassword(), storedPassword);
+        } else {
+            passwordMatch = loginRequest.getPassword() != null && loginRequest.getPassword().equals(storedPassword);
+        }
+        if (!passwordMatch) {
             throw new RuntimeException("密码错误");
         }
 
+        if (loginRequest.getRole() != null && !loginRequest.getRole().isBlank()) {
+            String requestRole = loginRequest.getRole().trim().toLowerCase();
+            if (!user.getRole().name().equals(requestRole)) {
+                throw new RuntimeException("用户身份不匹配");
+            }
+        }
+
         String token = jwtTokenProvider.generateToken(user.getUsername());
-        UserResponse userResponse = convertToUserResponse(user);
+        UserResponse userResponse = UserResponse.fromEntity(user);
 
         return LoginResponse.builder()
                 .token(token)
@@ -52,43 +66,41 @@ public class AuthService {
             throw new RuntimeException("用户名已存在");
         }
 
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+        if (registerRequest.getEmail() != null && !registerRequest.getEmail().isBlank()
+                && userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new RuntimeException("邮箱已被注册");
         }
 
-        User user = User.builder()
-                .username(registerRequest.getUsername())
-                .email(registerRequest.getEmail())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .realName(registerRequest.getRealName())
-                .active(true)
-                .build();
-
+        User.UserRole role;
         try {
-            user.setRole(User.UserRole.valueOf(registerRequest.getRole().toUpperCase()));
+            role = User.UserRole.valueOf(registerRequest.getRole().toLowerCase());
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("无效的用户角色");
         }
 
-        user = userRepository.save(user);
+        String userId = registerRequest.getUserId();
+        if (userId == null || userId.isBlank()) {
+            userId = "U" + System.currentTimeMillis() % 1000000000;
+        }
 
-        return convertToUserResponse(user);
+        User user = User.builder()
+                .userId(userId)
+                .username(registerRequest.getUsername())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(role)
+                .department(registerRequest.getDepartment())
+                .phone(registerRequest.getPhone())
+                .active(true)
+                .build();
+
+        user = userRepository.save(user);
+        return UserResponse.fromEntity(user);
     }
 
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
-        return convertToUserResponse(user);
-    }
-
-    private UserResponse convertToUserResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .realName(user.getRealName())
-                .role(user.getRole().name())
-                .active(user.getActive())
-                .build();
+        return UserResponse.fromEntity(user);
     }
 }

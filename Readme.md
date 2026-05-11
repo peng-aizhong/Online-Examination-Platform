@@ -1,292 +1,236 @@
-# 🎓 在线智能考试系统 - 完整项目框架
+# 在线智能考试系统
 
-> **项目状态**: ✅ v1.0.0 - 核心框架已完成，登录注册功能已实现
+基于 Spring Boot + Vue 3 的前后端分离在线考试平台，支持学生考试、教师组卷阅卷、题库管理、学习资源共享等完整业务流程。
 
----
+## 技术栈
 
-## 🚀 快速开始
+**后端**
 
-### 3分钟快速启动
+- Java 17 + Spring Boot 3.4.5
+- Spring Security + JWT (HS512) 认证
+- Spring Data JPA + Hibernate + MySQL 8
+- BCrypt 密码加密
+- 文件上传 (MultipartFile, 100MB 限制)
+
+**前端**
+
+- Vue 3 + Vite
+- Element Plus 组件库
+- Pinia 状态管理
+- Axios HTTP 客户端
+- Vue Router 路由守卫
+
+## 功能概览
+
+### 学生端
+
+- 参加考试 — 浏览可参加的考试列表，进入答题页面，提交试卷后自动评分
+- 成绩查询 — 查看历史考试成绩列表
+- 成绩报告 — 单次考试的详细得分报告，含每题得分情况
+- 错题本 — 汇总答错的题目，便于复习
+- 学习资源 — 浏览教师上传的学习资料，支持文档下载、视频预览、图片预览、链接跳转
+
+### 教师端
+
+- 题库管理 — 题目的增删改查，支持单选/多选/判断/填空/简答等题型，按科目、类型、关键词筛选
+- 试卷管理 — 创建试卷、从题库选题组卷、设置每题分值，支持编辑和删除
+- 阅卷评分 — 查看待批改的考试答卷，进行人工评分
+- 学情分析 — 查看班级整体考试数据与统计
+- 学习资源 — 上传文件（PDF、视频、图片等）或添加外部链接资源，管理已上传资料
+
+### 管理员端
+
+- 用户管理 — 查看和管理所有用户账号
+- 系统配置 — 系统参数设置
+
+## 项目结构
+
+```
+Online-Examination-Platform/
+├── backend/                          # Spring Boot 后端
+│   └── src/main/java/com/examination/
+│       ├── config/                   # 配置类 (Security, CORS, 数据初始化)
+│       ├── controller/               # REST 控制器
+│       ├── dto/                      # 数据传输对象
+│       ├── entity/                   # JPA 实体类
+│       ├── exception/                # 全局异常处理
+│       ├── repository/               # 数据访问层
+│       ├── security/                 # JWT 过滤器
+│       └── service/                  # 业务逻辑层
+├── frontend/                         # Vue 3 前端
+│   └── src/
+│       ├── api/                      # API 请求封装
+│       ├── router/                   # 路由配置
+│       ├── store/                    # Pinia 状态管理
+│       ├── styles/                   # 全局样式
+│       └── views/                    # 页面组件
+│           ├── auth/                 # 登录、注册
+│           ├── dashboard/            # 仪表板
+│           ├── student/              # 学生端页面
+│           └── teacher/              # 教师端页面
+└── README.md
+```
+
+## 数据库设计
+
+数据库名 `exam_system`，核心表结构：
+
+| 表名 | 说明 |
+|------|------|
+| `user` | 用户表 (学生/教师/管理员) |
+| `subject` | 科目表 |
+| `question` | 题目表 (支持多种题型) |
+| `paper` | 试卷表 |
+| `paper_question` | 试卷-题目关联表 (含分值) |
+| `exam_assignment` | 考试分配表 (教师发布考试) |
+| `exam_assignment_student` | 考试-学生关联表 |
+| `exam_session` | 考试会话表 (记录每次考试) |
+| `exam_session_answer` | 答题记录表 |
+| `learning_resource` | 学习资源表 |
+
+主键采用 VARCHAR 类型 (如 `U001`, `Q001`, `P001`)，外键关联实现数据完整性。
+
+## 快速启动
+
+### 环境要求
+
+- JDK 17+
+- Maven 3.6+
+- Node.js 16+
+- MySQL 8.0+
+
+### 1. 创建数据库
+
+```sql
+CREATE DATABASE exam_system DEFAULT CHARACTER SET utf8mb4;
+```
+
+执行项目中的建表脚本，或让 JPA 自动建表 (`spring.jpa.hibernate.ddl-auto=update`)。
+
+### 2. 配置数据库连接
+
+编辑 `backend/src/main/resources/application.properties`：
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/exam_system?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=your_password
+```
+
+### 3. 启动后端
+
 ```bash
-# 1. 配置数据库（执行初始化脚本）
-mysql -u root -p < backend/src/main/resources/init.sql
-
-# 2. 启动后端 (新开终端)
 cd backend
 mvn spring-boot:run
+```
 
-# 3. 启动前端 (再新开终端)
+启动成功后会打印：
+
+```
+============================================
+   Online Examination Platform Started!
+============================================
+   Frontend URL: http://localhost:8080
+============================================
+```
+
+### 4. 启动前端
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-访问 `http://localhost:5173` 开始体验！  
-**测试账号**: student01 / 123456
+前端开发服务器启动在 `http://localhost:5173`，生产构建由后端在 8080 端口统一提供服务。
 
-### 📚 完整指南
-- [快速启动指南](./GETTING_STARTED.md) ⭐ **新手必读**
-- [项目结构说明](./PROJECT_STRUCTURE.md)
-- [后端API文档](./backend/README.md)
-- [前端开发指南](./frontend/README.md)
+### 5. 访问系统
 
----
+浏览器打开 `http://localhost:8080`。
 
-## 🌟 一、系统总体目标
+默认测试账号：
 
-本系统面向高校及培训机构考试场景，构建一个集**智能组卷 在线考试 防作弊控制 自动阅卷 成绩分析 题库管理**于一体的综合性平台，实现考试全过程的信息化与智能化管理  
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 学生 | student01 | 123456 |
+| 教师 | teacher01 | 123456 |
+| 管理员 | admin01 | 123456 |
 
-系统支持三类核心用户角色  
+## API 接口
 
-- **管理员** - 负责系统运行与权限控制  
-- **教师** - 负责命题、组卷、考试管理与阅卷  
-- **学生** - 参与考试、查看成绩与学习反馈  
+### 认证
 
-系统建设目标  
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/auth/login` | 用户登录 |
+| POST | `/api/auth/register` | 用户注册 |
 
-- ✅ 提高考试组织效率，降低人工成本  
-- ✅ 提升考试公平性与安全性  
-- ✅ 实现数据驱动的教学评估与学习分析  
-- ✅ 构建可扩展的题库与知识体系  
+### 学生端
 
----
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/student/assignments` | 获取考试列表 |
+| GET | `/api/student/assignments/{id}` | 考试详情 |
+| POST | `/api/student/assignments/{id}/submit` | 提交答卷 |
+| GET | `/api/student/results` | 成绩列表 |
+| GET | `/api/student/report/{sessionId}` | 成绩报告 |
+| GET | `/api/student/wrong-questions` | 错题本 |
+| GET | `/api/student/resources` | 学习资源列表 |
+| GET | `/api/student/resources/{id}` | 资源详情 |
+| GET | `/api/student/resources/{id}/download` | 下载资源 |
 
-## ✨ 已实现功能清单
+### 教师端
 
-### 前端功能
-✅ **完整的Vue 3框架** - 现代化前端架构  
-✅ **登录页面** - 支持学生/教师/管理员身份  
-✅ **注册页面** - 完整注册流程与验证  
-✅ **仪表板** - 根据角色展示不同内容  
-✅ **响应式布局** - 适配各种设备  
-✅ **路由守卫** - 自动跳转到登录页  
-✅ **状态管理** - Pinia全局状态  
-✅ **API封装** - Axios统一请求  
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/teacher/questions` | 题目列表 |
+| POST | `/api/teacher/questions` | 创建题目 |
+| PUT | `/api/teacher/questions/{id}` | 更新题目 |
+| DELETE | `/api/teacher/questions/{id}` | 删除题目 |
+| GET | `/api/teacher/papers` | 试卷列表 |
+| POST | `/api/teacher/papers` | 创建试卷 |
+| GET | `/api/teacher/papers/{id}` | 试卷详情 |
+| PUT | `/api/teacher/papers/{id}` | 更新试卷 |
+| DELETE | `/api/teacher/papers/{id}` | 删除试卷 |
+| POST | `/api/teacher/papers/{id}/questions` | 向试卷添加题目 |
+| DELETE | `/api/teacher/papers/{id}/questions/{qid}` | 从试卷移除题目 |
+| GET | `/api/teacher/resources` | 资源列表 |
+| POST | `/api/teacher/resources/upload` | 上传文件资源 |
+| POST | `/api/teacher/resources/link` | 添加链接资源 |
+| PUT | `/api/teacher/resources/{id}` | 更新资源 |
+| DELETE | `/api/teacher/resources/{id}` | 删除资源 |
+| GET | `/api/teacher/analytics` | 学情分析数据 |
 
-### 后端功能
-✅ **Spring Boot框架** - 高性能Java后端  
-✅ **用户登录接口** - 支持密码验证  
-✅ **用户注册接口** - 完整注册逻辑  
-✅ **JWT认证** - 令牌认证机制  
-✅ **Spring Security** - 权限控制  
-✅ **数据库设计** - 用户表完整设计  
-✅ **异常处理** - 统一异常响应  
-✅ **CORS跨域** - 支持前后端通信  
+### 系统
 
-### 数据库
-✅ **MySQL数据库设计** - 用户表完整结构  
-✅ **初始化脚本** - 自动建表和测试数据  
-✅ **索引优化** - 提升查询性能  
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/system/subjects` | 获取科目列表 |
 
----
+所有接口均需 JWT 认证（`Authorization: Bearer <token>`），登录和注册接口除外。
 
-## 🧱 二、系统技术架构与技术栈
+## 部署说明
 
-### 🏗️ 整体架构
+### 生产构建
 
-系统采用典型前后端分离架构  
+```bash
+# 构建前端
+cd frontend
+npm run build
 
----
+# 将 dist/ 内容复制到 backend/src/main/resources/static/
+cp -r dist/* ../backend/src/main/resources/static/
 
-### 💻 前端技术栈
+# 打包后端
+cd ../backend
+mvn clean package -DskipTests
 
-- Vue 或 React 构建单页应用  
-- Element Plus 或 Ant Design 实现现代化界面  
-- Axios 实现前后端数据交互  
-- ECharts 实现成绩分析可视化  
-- Monaco Editor 实现在线编程编辑器  
-- KaTeX 或 MathJax 实现数学公式渲染  
+# 运行
+java -jar target/examination-platform-0.0.1-SNAPSHOT.jar
+```
 
-前端特点  
+生产环境只需运行后端 JAR，前后端统一由 Spring Boot 在 8080 端口提供服务。
 
-- 响应式布局 适配不同设备  
-- 组件化开发 提高复用性  
-- 页面交互流畅 用户体验良好  
+### 文件上传
 
----
-
-### ⚙️ 后端技术栈
-
-- Java Spring Boot 构建核心服务  
-- Spring MVC 处理请求分发  
-- MyBatis 或 JPA 实现数据库访问  
-- Spring Security 或 JWT 实现权限控制  
-
-核心能力  
-
-- RESTful API 接口设计  
-- 分层架构 控制层 服务层 数据访问层  
-- 支持高并发访问  
-
----
-
-### 🗄️ 数据库技术
-
-- MySQL 作为主数据库  
-- Redis 用于缓存与会话管理  
-
-设计特点  
-
-- 主键采用 VARCHAR 类型 如 U001 C001  
-- 满足第三范式设计  
-- 支持高效查询与索引优化  
-
----
-
-### ☁️ 扩展技术
-
-- WebSocket 实现实时监控与消息推送  
-- Docker 支持系统部署与环境隔离  
-- Nginx 作为反向代理服务器  
-- MinIO 或 OSS 用于文件存储  
-
----
-
-### 🔐 安全技术
-
-- HTTPS 加密传输  
-- JWT 身份认证  
-- 防止 SQL 注入与 XSS 攻击  
-- 数据备份与恢复机制  
-
----
-
-## 🧩 三、核心功能模块
-
----
-
-## 🧠 1️⃣ 智能组卷与防作弊机制
-
-### 📖 功能概述
-通过规则驱动与算法支持实现自动组卷 同时结合多种防作弊策略 确保考试公平性与安全性  
-
----
-
-### ⚙️ 功能要求
-
-#### 📝 智能组卷
-
-系统需提供灵活的组卷规则配置能力  
-
-支持配置内容包括  
-
-- 题型数量  
-- 分值设置  
-- 难度分布比例  
-- 知识点覆盖范围  
-
-组卷方式  
-
-- 随机组卷 自动抽题  
-- 手动组卷 教师自主选择  
-- 混合组卷 固定与随机结合  
-
-附加能力  
-
-- 试卷预览  
-- 多版本对比  
-- 模板复用  
-
----
-
-#### 🔐 防作弊策略
-
-- 切屏限制与记录  
-- 题目与选项随机化  
-- 千人千卷机制  
-- 摄像头监控与行为分析  
-
----
-
-#### 🔄 异常恢复机制
-
-- 自动保存进度  
-- 断线恢复  
-- 数据同步  
-
----
-
-## 👥 2️⃣ 多角色工作台与成绩分析
-
-### 📖 功能概述
-提供个性化工作台与多维数据分析能力  
-
----
-
-### 🧑‍💻 角色功能
-
-学生端  
-
-- 考试管理  
-- 成绩查询  
-- 错题本  
-
-教师端  
-
-- 试卷管理  
-- 在线监考  
-- 阅卷与分析  
-
-管理员端  
-
-- 用户管理  
-- 权限控制  
-- 系统监控  
-
----
-
-### 📊 成绩分析
-
-- 成绩统计  
-- 题目分析  
-- 趋势分析  
-- 可视化展示  
-
----
-
-## 📚 3️⃣ 试题库与组卷系统
-
-支持多种题型  
-
-- 客观题  
-- 主观题  
-- 编程题  
-- 实操题  
-
-支持灵活组卷方式与题库管理  
-
----
-
-## 🖥️ 4️⃣ 在线考试与实时监控
-
-- 在线答题系统  
-- 实时监控  
-- 异常处理  
-- 数据安全保障  
-
----
-
-## 📢 5️⃣ 通知公告与消息中心
-
-- 考试通知  
-- 成绩通知  
-- 公告发布  
-- 实时消息交互  
-
----
-
-## 🗂️ 6️⃣ 题库全生命周期管理
-
-- 题目创建 审核 发布  
-- 版本控制  
-- 知识点体系  
-- 批量操作与备份  
-
----
-
-## 🤖 7️⃣ 自动化阅卷与评分反馈系统
-
-- 客观题自动评分  
-- 主观题辅助批阅  
-- 编程题自动评测  
-- 成绩反馈与复核  
+上传的学习资源文件存储在项目根目录下的 `uploads/` 文件夹，可通过 `application.properties` 中的 `app.upload.dir` 配置修改路径。

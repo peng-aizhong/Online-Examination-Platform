@@ -106,7 +106,7 @@ const handleLogin = async () => {
     loading.value = true
 
     try {
-      const response = await login(loginForm.username, loginForm.password)
+      const response = await login(loginForm.username, loginForm.password, loginForm.role)
 
       if (response.code === 200) {
         // 保存记住密码
@@ -151,6 +151,8 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  width: 100%;
+  flex: 1;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
@@ -159,8 +161,7 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 40px;
-  width: 100%;
-  max-width: 420px;
+  width: min(92vw, 520px);
 }
 
 .login-header {

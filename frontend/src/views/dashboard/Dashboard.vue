@@ -35,7 +35,7 @@
             <span>首页</span>
           </el-menu-item>
 
-          <template v-if="userStore.userInfo?.role === 'student'">
+          <template v-if="normalizedRole === 'student'">
             <el-menu-item index="exams">
               <el-icon><document /></el-icon>
               <span>参加考试</span>
@@ -44,9 +44,17 @@
               <el-icon><data-analysis /></el-icon>
               <span>成绩查询</span>
             </el-menu-item>
+            <el-menu-item index="student-resources">
+              <el-icon><folder /></el-icon>
+              <span>学习资源</span>
+            </el-menu-item>
           </template>
 
-          <template v-if="userStore.userInfo?.role === 'teacher'">
+          <template v-if="normalizedRole === 'teacher'">
+            <el-menu-item index="teacher-analytics">
+              <el-icon><data-analysis /></el-icon>
+              <span>学情分析</span>
+            </el-menu-item>
             <el-menu-item index="paper-manage">
               <el-icon><files /></el-icon>
               <span>试卷管理</span>
@@ -59,9 +67,13 @@
               <el-icon><document-checked /></el-icon>
               <span>阅卷评分</span>
             </el-menu-item>
+            <el-menu-item index="resource-manage">
+              <el-icon><folder /></el-icon>
+              <span>学习资源</span>
+            </el-menu-item>
           </template>
 
-          <template v-if="userStore.userInfo?.role === 'admin'">
+          <template v-if="normalizedRole === 'admin'">
             <el-menu-item index="user-manage">
               <el-icon><user /></el-icon>
               <span>用户管理</span>
@@ -81,7 +93,7 @@
         </el-card>
 
         <div class="dashboard-grid">
-          <el-card v-if="userStore.userInfo?.role === 'student'" class="stats-card">
+          <el-card v-if="normalizedRole === 'student'" class="stats-card">
             <template #header>
               <div class="card-header">
                 <span>考试统计</span>
@@ -109,7 +121,7 @@
             </el-row>
           </el-card>
 
-          <el-card v-if="userStore.userInfo?.role === 'teacher'" class="stats-card">
+          <el-card v-if="normalizedRole === 'teacher'" class="stats-card">
             <template #header>
               <div class="card-header">
                 <span>教师统计</span>
@@ -137,7 +149,7 @@
             </el-row>
           </el-card>
 
-          <el-card v-if="userStore.userInfo?.role === 'admin'" class="stats-card">
+          <el-card v-if="normalizedRole === 'admin'" class="stats-card">
             <template #header>
               <div class="card-header">
                 <span>系统统计</span>
@@ -171,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '../../store'
@@ -180,8 +192,28 @@ const router = useRouter()
 const userStore = useUserStore()
 const activeMenu = ref('dashboard')
 
+const normalizedRole = computed(() => {
+  const role = userStore.userInfo?.role
+  return role ? String(role).toLowerCase() : ''
+})
+
 const handleMenuSelect = (key) => {
   activeMenu.value = key
+  const routeMap = {
+    'dashboard': '/dashboard',
+    'exams': '/student/exams',
+    'scores': '/student/scores',
+    'student-resources': '/student/resources',
+    'teacher-analytics': '/teacher/analytics',
+    'question-bank': '/teacher/questions',
+    'paper-manage': '/teacher/papers',
+    'resource-manage': '/teacher/resources'
+  }
+  if (routeMap[key]) {
+    router.push(routeMap[key])
+  } else {
+    ElMessage.info('该功能开发中...')
+  }
 }
 
 const handleCommand = (command) => {
@@ -204,17 +236,20 @@ const handleCommand = (command) => {
 
 const getRoleLabel = (role) => {
   const roleMap = {
-    'student': '学生',
-    'teacher': '教师',
-    'admin': '管理员'
+    student: '学生',
+    teacher: '教师',
+    admin: '管理员'
   }
-  return roleMap[role] || role
+  const normalized = role ? String(role).toLowerCase() : ''
+  return roleMap[normalized] || role
 }
 
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     router.push('/login')
+    return
   }
+  userStore.restoreFromLocal()
 })
 </script>
 
