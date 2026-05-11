@@ -104,3 +104,11 @@ public class AuthService {
         return UserResponse.fromEntity(user);
     }
 }
+
+    /**
+     * 记录登录日志，用于安全审计 [Copilot辅助]
+     */
+    private void logLoginAttempt(String username, boolean success, String ip) {
+        String status = success ? "SUCCESS" : "FAILED";
+        log.info("Login attempt - user: {}, status: {}, ip: {}", username, status, ip);
+    }
