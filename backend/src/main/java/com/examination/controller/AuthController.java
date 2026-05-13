@@ -11,6 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -99,6 +101,19 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Change password error: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("修改密码失败"));
+        }
+    }
+
+    @GetMapping("/student-assignments")
+    public ResponseEntity<ApiResponse<List<AssignmentItemResponse>>> getStudentAssignments() {
+        try {
+            String username = currentUsername();
+            return ResponseEntity.ok(ApiResponse.success(authService.getStudentAssignments(username)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            log.error("Get student assignments error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("获取考试列表失败"));
         }
     }
 
