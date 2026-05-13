@@ -1,9 +1,6 @@
 package com.examination.service;
 
-import com.examination.dto.LoginRequest;
-import com.examination.dto.LoginResponse;
-import com.examination.dto.RegisterRequest;
-import com.examination.dto.UserResponse;
+import com.examination.dto.*;
 import com.examination.entity.User;
 import com.examination.repository.UserRepository;
 import com.examination.security.JwtTokenProvider;
@@ -102,5 +99,47 @@ public class AuthService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         return UserResponse.fromEntity(user);
+    }
+
+    public UserResponse updateProfile(String username, ProfileUpdateRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()
+                && !request.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("邮箱已被占用");
+        }
+
+        if (request.getEmail() != null) user.setEmail(request.getEmail().isBlank() ? null : request.getEmail());
+        if (request.getPhone() != null) user.setPhone(request.getPhone().isBlank() ? null : request.getPhone());
+        if (request.getDepartment() != null) user.setDepartment(request.getDepartment().isBlank() ? null : request.getDepartment());
+
+        user = userRepository.save(user);
+        return UserResponse.fromEntity(user);
+    }
+
+    public void changePassword(String username, PasswordChangeRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        String storedPassword = user.getPassword();
+        boolean oldPasswordMatch;
+        if (storedPassword != null && storedPassword.startsWith("$2a$")) {
+            oldPasswordMatch = passwordEncoder.matches(request.getOldPassword(), storedPassword);
+        } else {
+            oldPasswordMatch = request.getOldPassword() != null && request.getOldPassword().equals(storedPassword);
+        }
+
+        if (!oldPasswordMatch) {
+            throw new RuntimeException("原密码错误");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+            throw new RuntimeException("新密码长度不能少于6位");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

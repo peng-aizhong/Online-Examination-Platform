@@ -187,19 +187,55 @@ public class StudentExamService {
             }
         }
 
-        double totalEarned = 0;
-        int totalPossible = 0;
+        double objectiveEarned = 0;
+        int objectivePossible = 0;
         List<SubmitExamResponse.MistakeQuestion> mistakes = new ArrayList<>();
 
         for (PaperQuestion pq : paperQuestions) {
             Question q = questionRepository.findById(pq.getQuestionId()).orElse(null);
             if (q == null) continue;
 
-            totalPossible += pq.getScore();
             String yourAnswer = answerMap.getOrDefault(q.getId(), "");
-            boolean correct = q.getAnswer() != null && q.getAnswer().equalsIgnoreCase(yourAnswer);
-            double score = correct ? pq.getScore() : 0;
-            totalEarned += score;
+            String questionType = q.getQuestionType();
+            boolean correct;
+            Double score;
+            String feedback = null;
+
+            if ("subjective".equals(questionType)) {
+                correct = false;
+                score = null;
+                feedback = null;
+            } else if ("multiple".equals(questionType)) {
+                objectivePossible += pq.getScore();
+                Set<String> correctSet = q.getAnswer() != null
+                        ? new TreeSet<>(Arrays.asList(q.getAnswer().split(",")))
+                        : Collections.emptySet();
+                Set<String> answerSet = yourAnswer.isEmpty()
+                        ? Collections.emptySet()
+                        : new TreeSet<>(Arrays.asList(yourAnswer.split(",")));
+                correct = !correctSet.isEmpty() && correctSet.equals(answerSet);
+                score = (double) (correct ? pq.getScore() : 0);
+                objectiveEarned += score;
+                if (!correct) feedback = "正确答案: " + q.getAnswer();
+            } else if ("fill".equals(questionType)) {
+                objectivePossible += pq.getScore();
+                if (q.getAnswer() != null && !yourAnswer.isEmpty()) {
+                    String[] accepted = q.getAnswer().split("\\|");
+                    correct = Arrays.stream(accepted)
+                            .anyMatch(a -> a.trim().equalsIgnoreCase(yourAnswer.trim()));
+                } else {
+                    correct = false;
+                }
+                score = (double) (correct ? pq.getScore() : 0);
+                objectiveEarned += score;
+                if (!correct) feedback = "正确答案: " + q.getAnswer();
+            } else {
+                objectivePossible += pq.getScore();
+                correct = q.getAnswer() != null && q.getAnswer().equalsIgnoreCase(yourAnswer);
+                score = (double) (correct ? pq.getScore() : 0);
+                objectiveEarned += score;
+                if (!correct) feedback = "正确答案: " + q.getAnswer();
+            }
 
             ExamSessionAnswer answer = sessionAnswerRepository
                     .findBySessionIdAndQuestionId(session.getSessionId(), q.getId())
@@ -210,11 +246,11 @@ public class StudentExamService {
 
             answer.setAnswerText(yourAnswer);
             answer.setScore(score);
-            answer.setFeedback(correct ? null : "正确答案: " + q.getAnswer());
+            answer.setFeedback(feedback);
             answer.setAnsweredAt(LocalDateTime.now());
             sessionAnswerRepository.save(answer);
 
-            if (!correct) {
+            if (!"subjective".equals(questionType) && !correct) {
                 mistakes.add(SubmitExamResponse.MistakeQuestion.builder()
                         .questionId(q.getId())
                         .content(q.getContent())
@@ -222,22 +258,23 @@ public class StudentExamService {
                         .yourAnswer(yourAnswer)
                         .score(pq.getScore())
                         .knowledgeTag(q.getKnowledgeTag())
-                        .feedback("正确答案: " + q.getAnswer())
+                        .feedback(feedback)
                         .build());
             }
         }
 
-        int accuracy = totalPossible == 0 ? 0 : (int) Math.round((totalEarned * 100.0) / totalPossible);
-        session.setTotalScore(totalEarned);
-        session.setObjectiveScore(totalEarned);
+        int accuracy = objectivePossible == 0 ? 0 : (int) Math.round((objectiveEarned * 100.0) / objectivePossible);
+        session.setObjectiveScore(objectiveEarned);
+        session.setSubjectiveScore(0.0);
+        session.setTotalScore(objectiveEarned);
         session.setStatus("submitted");
         session.setSubmittedAt(LocalDateTime.now());
         sessionRepository.save(session);
 
         return SubmitExamResponse.builder()
                 .sessionId(session.getSessionId())
-                .score(totalEarned)
-                .totalScore(totalPossible)
+                .score(objectiveEarned)
+                .totalScore(objectivePossible)
                 .accuracy(accuracy)
                 .mistakes(mistakes)
                 .build();

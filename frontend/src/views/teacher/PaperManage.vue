@@ -23,6 +23,7 @@
           <template #default="{ row }">
             <el-button size="small" @click="openPaperDialog(row)">编辑</el-button>
             <el-button size="small" type="primary" @click="openComposeDialog(row)">组题</el-button>
+            <el-button size="small" type="warning" @click="openPreviewDialog(row)">预览</el-button>
             <el-button size="small" type="danger" @click="handleDeletePaper(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -112,6 +113,58 @@
         <el-button type="primary" :loading="submitting" @click="handleComposeSubmit">保存组题</el-button>
       </template>
     </el-dialog>
+
+    <!-- 试卷预览弹窗 -->
+    <el-dialog v-model="previewDialogVisible" :title="'试卷预览: ' + previewPaperName" width="800px" destroy-on-close>
+      <div v-if="previewQuestions.length > 0" class="preview-container">
+        <div class="preview-header">
+          <p><strong>试卷名称：</strong>{{ previewPaperName }} | <strong>总分：</strong>{{ previewTotalScore }}分 | <strong>题目数：</strong>{{ previewQuestions.length }}题</p>
+        </div>
+        <div v-for="(q, index) in previewQuestions" :key="q.questionId" class="preview-question">
+          <h4>{{ index + 1 }}. {{ q.content }}
+            <el-tag size="small" style="margin-left:8px">{{ typeLabelMap[q.questionType] || q.questionType }}</el-tag>
+            <span style="float:right;color:#999;font-size:13px">{{ q.score }}分</span>
+          </h4>
+
+          <!-- 单选题 -->
+          <div v-if="q.questionType === 'single' || !q.questionType" class="preview-options">
+            <p>A. {{ q.optionA }}</p>
+            <p>B. {{ q.optionB }}</p>
+            <p>C. {{ q.optionC }}</p>
+            <p>D. {{ q.optionD }}</p>
+          </div>
+
+          <!-- 多选题 -->
+          <div v-else-if="q.questionType === 'multiple'" class="preview-options">
+            <p>A. {{ q.optionA }}</p>
+            <p>B. {{ q.optionB }}</p>
+            <p>C. {{ q.optionC }}</p>
+            <p>D. {{ q.optionD }}</p>
+          </div>
+
+          <!-- 判断题 -->
+          <div v-else-if="q.questionType === 'judge'" class="preview-options">
+            <p>A. 正确 &nbsp;&nbsp; B. 错误</p>
+          </div>
+
+          <!-- 填空题 -->
+          <div v-else-if="q.questionType === 'fill'" class="preview-options">
+            <p style="color:#999">（请在此填写答案）</p>
+          </div>
+
+          <!-- 主观题 -->
+          <div v-else-if="q.questionType === 'subjective'" class="preview-options">
+            <p style="color:#999">（请在此作答）</p>
+          </div>
+
+          <div class="preview-answer">
+            <strong>正确答案：</strong><span style="color:#67c23a">{{ q.answer }}</span>
+            <span v-if="q.knowledgeTag" style="margin-left:16px;color:#999">知识点: {{ q.knowledgeTag }}</span>
+          </div>
+        </div>
+      </div>
+      <el-empty v-else description="该试卷暂无题目" />
+    </el-dialog>
   </div>
 </template>
 
@@ -140,6 +193,13 @@ const availableQuestions = ref([])
 const selectedQuestions = ref([])
 const paperQuestions = ref([])
 const composeFilter = reactive({ subjectId: '', keyword: '' })
+
+// 试卷预览
+const previewDialogVisible = ref(false)
+const previewPaperName = ref('')
+const previewTotalScore = ref(0)
+const previewQuestions = ref([])
+const typeLabelMap = { single: '单选题', multiple: '多选题', judge: '判断题', fill: '填空题', subjective: '主观题' }
 
 const computedTotalScore = computed(() => paperQuestions.value.reduce((sum, q) => sum + (q.score || 0), 0))
 
@@ -265,6 +325,20 @@ const removeQuestion = (row) => {
 
 const onScoreChange = () => {}
 
+const openPreviewDialog = async (paper) => {
+  previewPaperName.value = paper.paperName
+  previewTotalScore.value = paper.totalScore || 0
+  previewQuestions.value = []
+  try {
+    const res = await getPaper(paper.paperId)
+    if (res.code === 200) {
+      previewQuestions.value = res.data.questions || []
+      previewTotalScore.value = res.data.totalScore || 0
+    }
+  } catch {}
+  previewDialogVisible.value = true
+}
+
 const handleComposeSubmit = async () => {
   if (!composingPaper.value) return
   submitting.value = true
@@ -300,4 +374,12 @@ onMounted(() => {
 <style scoped>
 .paper-manage-container { padding: 0; }
 h4 { margin: 0 0 12px 0; color: #333; }
+.preview-container { max-height: 65vh; overflow-y: auto; }
+.preview-header { padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 16px; }
+.preview-header p { margin: 0; }
+.preview-question { border: 1px solid #ebeef5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
+.preview-question h4 { margin: 0 0 12px 0; font-size: 15px; }
+.preview-options { padding-left: 16px; }
+.preview-options p { margin: 6px 0; color: #333; }
+.preview-answer { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; font-size: 13px; }
 </style>

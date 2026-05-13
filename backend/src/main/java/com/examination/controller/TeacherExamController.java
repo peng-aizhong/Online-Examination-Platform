@@ -1,8 +1,7 @@
 package com.examination.controller;
 
 import com.examination.common.ApiResponse;
-import com.examination.dto.ClassStatisticsResponse;
-import com.examination.dto.GradingResultResponse;
+import com.examination.dto.*;
 import com.examination.service.TeacherExamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +44,57 @@ public class TeacherExamController {
         } catch (Exception e) {
             log.error("Get grading results error", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("获取阅卷结果失败"));
+        }
+    }
+
+    @PostMapping("/assignments")
+    public ResponseEntity<ApiResponse<AssignmentResponse>> createAssignment(@RequestBody CreateAssignmentRequest request) {
+        try {
+            String username = currentUsername();
+            return ResponseEntity.ok(ApiResponse.success(teacherExamService.createAssignment(username, request)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            log.error("Create assignment error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("创建考试分配失败"));
+        }
+    }
+
+    @GetMapping("/assignments")
+    public ResponseEntity<ApiResponse<List<AssignmentResponse>>> listAssignments() {
+        try {
+            String username = currentUsername();
+            return ResponseEntity.ok(ApiResponse.success(teacherExamService.listAssignments(username)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            log.error("List assignments error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("获取考试列表失败"));
+        }
+    }
+
+    @GetMapping("/students")
+    public ResponseEntity<ApiResponse<List<StudentInfoResponse>>> listStudents() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(teacherExamService.listStudents()));
+        } catch (Exception e) {
+            log.error("List students error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("获取学生列表失败"));
+        }
+    }
+
+    @PostMapping("/grading/{sessionId}/grade")
+    public ResponseEntity<ApiResponse<GradingResultResponse>> gradeSubjective(
+            @PathVariable String sessionId,
+            @RequestBody GradeSubjectiveRequest request) {
+        try {
+            String username = currentUsername();
+            return ResponseEntity.ok(ApiResponse.success(teacherExamService.gradeSubjective(username, sessionId, request)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            log.error("Grade subjective error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("主观题评分失败"));
         }
     }
 

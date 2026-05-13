@@ -66,12 +66,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../../api/auth'
 import { useUserStore } from '../../store'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const loginFormRef = ref()
 const loading = ref(false)
@@ -139,6 +140,9 @@ const goToRegister = () => {
 }
 
 onMounted(() => {
+  if (route.query.role) {
+    loginForm.role = route.query.role
+  }
   if (rememberPassword.value) {
     rememberPassword.value = !!localStorage.getItem('remembered_username')
   }

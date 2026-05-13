@@ -39,6 +39,7 @@
         <el-table-column prop="downloadCount" label="下载" width="70" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
+            <el-button size="small" type="success" v-if="row.type !== 'LINK'" @click="openPreview(row)">预览</el-button>
             <el-button size="small" @click="openEditDialog(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -116,6 +117,34 @@
       </template>
     </el-dialog>
 
+    <!-- 预览弹窗 -->
+    <el-dialog v-model="previewVisible" :title="previewItem?.title" width="800px" destroy-on-close top="5vh">
+      <div v-if="previewItem" class="preview-body">
+        <el-descriptions :column="2" border style="margin-bottom:16px">
+          <el-descriptions-item label="类型">{{ typeLabelMap[previewItem.type] }}</el-descriptions-item>
+          <el-descriptions-item label="大小">{{ formatSize(previewItem.fileSize) }}</el-descriptions-item>
+          <el-descriptions-item label="分类">{{ previewItem.category || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="科目">{{ previewItem.subjectName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">{{ previewItem.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
+        <div v-if="previewItem.type === 'IMAGE'" class="preview-media">
+          <el-image :src="previewUrl" fit="contain" style="max-height:60vh;width:100%" />
+        </div>
+        <div v-else-if="previewItem.type === 'VIDEO'" class="preview-media">
+          <video :src="previewUrl" controls style="max-height:60vh;width:100%">
+            您的浏览器不支持视频播放
+          </video>
+        </div>
+        <div v-else class="preview-file-info">
+          <el-result icon="info" title="暂不支持在线预览" sub-title="请下载后查看文件内容">
+            <template #extra>
+              <el-button type="primary" @click="downloadFile">下载文件</el-button>
+            </template>
+          </el-result>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 编辑弹窗 -->
     <el-dialog v-model="editDialogVisible" title="编辑资源" width="500px" destroy-on-close>
       <el-form :model="editForm" label-width="80px">
@@ -165,6 +194,23 @@ const uploadDialogVisible = ref(false)
 const linkDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const editingResource = ref(null)
+
+// 预览
+const previewVisible = ref(false)
+const previewItem = ref(null)
+const previewUrl = ref('')
+
+const openPreview = (row) => {
+  previewItem.value = row
+  previewUrl.value = row.filePath || ''
+  previewVisible.value = true
+}
+
+const downloadFile = () => {
+  if (previewUrl.value) {
+    window.open(previewUrl.value, '_blank')
+  }
+}
 
 const uploadForm = reactive({ title: '', description: '', category: '', tags: '', subjectId: '' })
 const linkForm = reactive({ title: '', externalUrl: '', description: '', category: '', tags: '', subjectId: '' })
@@ -309,4 +355,7 @@ onMounted(() => {
 <style scoped>
 .resource-manage-container { padding: 0; }
 .filter-card :deep(.el-form-item) { margin-bottom: 0; }
+.preview-body { text-align: left; }
+.preview-media { text-align: center; border-radius: 8px; overflow: hidden; background: #f5f7fa; }
+.preview-file-info { padding: 20px 0; }
 </style>

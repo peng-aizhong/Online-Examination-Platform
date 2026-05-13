@@ -15,13 +15,40 @@
         <div v-for="(question, index) in assignment.questions" :key="question.questionId" class="question-card">
           <h3>{{ index + 1 }}. {{ question.content }}（{{ question.score }}分）
             <el-tag size="small" type="info" v-if="question.knowledgeTag" style="margin-left: 8px;">{{ question.knowledgeTag }}</el-tag>
+            <el-tag size="small" v-if="question.questionType === 'single'" style="margin-left: 4px;">单选题</el-tag>
+            <el-tag size="small" type="warning" v-if="question.questionType === 'multiple'" style="margin-left: 4px;">多选题</el-tag>
+            <el-tag size="small" type="success" v-if="question.questionType === 'judge'" style="margin-left: 4px;">判断题</el-tag>
+            <el-tag size="small" type="danger" v-if="question.questionType === 'fill'" style="margin-left: 4px;">填空题</el-tag>
+            <el-tag size="small" type="info" v-if="question.questionType === 'subjective'" style="margin-left: 4px;">主观题</el-tag>
           </h3>
-          <el-radio-group v-model="answers[question.questionId]">
+
+          <!-- 单选题 -->
+          <el-radio-group v-if="question.questionType === 'single' || !question.questionType" v-model="answers[question.questionId]">
             <el-radio value="A">A. {{ question.optionA }}</el-radio>
             <el-radio value="B">B. {{ question.optionB }}</el-radio>
             <el-radio value="C">C. {{ question.optionC }}</el-radio>
             <el-radio value="D">D. {{ question.optionD }}</el-radio>
           </el-radio-group>
+
+          <!-- 多选题 -->
+          <el-checkbox-group v-else-if="question.questionType === 'multiple'" v-model="multiAnswers[question.questionId]">
+            <el-checkbox value="A">A. {{ question.optionA }}</el-checkbox>
+            <el-checkbox value="B">B. {{ question.optionB }}</el-checkbox>
+            <el-checkbox value="C">C. {{ question.optionC }}</el-checkbox>
+            <el-checkbox value="D">D. {{ question.optionD }}</el-checkbox>
+          </el-checkbox-group>
+
+          <!-- 判断题 -->
+          <el-radio-group v-else-if="question.questionType === 'judge'" v-model="answers[question.questionId]">
+            <el-radio value="true">正确</el-radio>
+            <el-radio value="false">错误</el-radio>
+          </el-radio-group>
+
+          <!-- 填空题 -->
+          <el-input v-else-if="question.questionType === 'fill'" v-model="answers[question.questionId]" placeholder="请输入答案" style="max-width: 400px;" />
+
+          <!-- 主观题 -->
+          <el-input v-else-if="question.questionType === 'subjective'" type="textarea" :rows="4" v-model="answers[question.questionId]" placeholder="请输入你的回答" />
         </div>
       </el-form>
 
@@ -46,6 +73,7 @@ const submitLoading = ref(false)
 const assignment = ref(null)
 const sessionId = ref(null)
 const answers = reactive({})
+const multiAnswers = reactive({})
 const secondsLeft = ref(0)
 let timer = null
 
@@ -74,6 +102,11 @@ const loadAssignment = async () => {
     assignment.value = res.data
     sessionId.value = res.data.sessionId
     secondsLeft.value = (assignment.value?.durationMinutes || 0) * 60
+    for (const q of assignment.value.questions || []) {
+      if (q.questionType === 'multiple') {
+        multiAnswers[q.questionId] = []
+      }
+    }
     startTimer()
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载考试失败')
@@ -85,10 +118,16 @@ const loadAssignment = async () => {
 
 const buildSubmitPayload = () => {
   const list = assignment.value?.questions || []
-  return list.map((q) => ({
-    questionId: q.questionId,
-    answer: answers[q.questionId] || ''
-  }))
+  return list.map((q) => {
+    let answer = ''
+    if (q.questionType === 'multiple') {
+      const selected = multiAnswers[q.questionId] || []
+      answer = [...selected].sort().join(',')
+    } else {
+      answer = answers[q.questionId] || ''
+    }
+    return { questionId: q.questionId, answer }
+  })
 }
 
 const handleSubmit = async (force = false) => {

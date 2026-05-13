@@ -83,6 +83,24 @@ export const deleteResource = (id) => {
   return authApi.delete(`/teacher/resources/${id}`)
 }
 
+// 考试分配管理
+export const createAssignment = (data) => {
+  return authApi.post('/teacher/assignments', data)
+}
+
+export const getTeacherAssignments = () => {
+  return authApi.get('/teacher/assignments')
+}
+
+export const getStudentList = () => {
+  return authApi.get('/teacher/students')
+}
+
+// 主观题评分
+export const gradeSubjective = (sessionId, data) => {
+  return authApi.post(`/teacher/grading/${sessionId}/grade`, data)
+}
+
 // 获取科目列表（复用）
 export const getSubjects = () => {
   return authApi.get('/system/subjects')

@@ -1,7 +1,6 @@
 package com.examination.service;
 
-import com.examination.dto.ClassStatisticsResponse;
-import com.examination.dto.GradingResultResponse;
+import com.examination.dto.*;
 import com.examination.entity.*;
 import com.examination.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +28,10 @@ public class TeacherExamService {
     private PaperQuestionRepository paperQuestionRepository;
     @Autowired
     private QuestionRepository questionRepository;
+    @Autowired
+    private ExamAssignmentStudentRepository assignmentStudentRepository;
+    @Autowired
+    private PaperRepository paperRepository;
 
     public ClassStatisticsResponse getClassStatistics(String username) {
         User teacher = userRepository.findByUsername(username)
@@ -248,5 +252,128 @@ public class TeacherExamService {
                     .typeBreakdowns(typeBreakdowns)
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AssignmentResponse createAssignment(String username, CreateAssignmentRequest request) {
+        User teacher = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        Paper paper = paperRepository.findById(request.getPaperId())
+                .orElseThrow(() -> new RuntimeException("试卷不存在"));
+
+        String assignmentId = "A" + System.currentTimeMillis() % 1000000000;
+
+        ExamAssignment assignment = ExamAssignment.builder()
+                .assignmentId(assignmentId)
+                .paper(paper)
+                .teacher(teacher)
+                .assignmentName(request.getAssignmentName())
+                .examStartTime(request.getExamStartTime())
+                .examEndTime(request.getExamEndTime())
+                .durationMinutes(request.getDurationMinutes())
+                .maxAttempts(request.getMaxAttempts() != null ? request.getMaxAttempts() : 1)
+                .status(ExamAssignment.AssignmentStatus.scheduled)
+                .build();
+        assignmentRepository.save(assignment);
+
+        if (request.getStudentIds() != null) {
+            for (String studentId : request.getStudentIds()) {
+                ExamAssignmentStudent eas = ExamAssignmentStudent.builder()
+                        .assignmentId(assignmentId)
+                        .studentId(studentId)
+                        .build();
+                assignmentStudentRepository.save(eas);
+            }
+        }
+
+        return AssignmentResponse.builder()
+                .assignmentId(assignmentId)
+                .assignmentName(assignment.getAssignmentName())
+                .paperId(paper.getPaperId())
+                .paperName(paper.getPaperName())
+                .examStartTime(assignment.getExamStartTime())
+                .examEndTime(assignment.getExamEndTime())
+                .durationMinutes(assignment.getDurationMinutes())
+                .maxAttempts(assignment.getMaxAttempts())
+                .status(assignment.getStatus().name())
+                .assignedStudentCount(request.getStudentIds() != null ? request.getStudentIds().size() : 0)
+                .createdAt(assignment.getCreatedAt())
+                .build();
+    }
+
+    public List<AssignmentResponse> listAssignments(String username) {
+        User teacher = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        List<ExamAssignment> assignments = assignmentRepository.findByTeacher(teacher);
+        return assignments.stream().map(a -> {
+            List<ExamAssignmentStudent> students = assignmentStudentRepository.findByAssignmentId(a.getAssignmentId());
+            return AssignmentResponse.builder()
+                    .assignmentId(a.getAssignmentId())
+                    .assignmentName(a.getAssignmentName())
+                    .paperId(a.getPaper().getPaperId())
+                    .paperName(a.getPaper().getPaperName())
+                    .examStartTime(a.getExamStartTime())
+                    .examEndTime(a.getExamEndTime())
+                    .durationMinutes(a.getDurationMinutes())
+                    .maxAttempts(a.getMaxAttempts())
+                    .status(a.getStatus().name())
+                    .assignedStudentCount(students.size())
+                    .createdAt(a.getCreatedAt())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    public List<StudentInfoResponse> listStudents() {
+        List<User> students = userRepository.findByRoleAndActiveTrue(User.UserRole.student);
+        return students.stream().map(s -> StudentInfoResponse.builder()
+                .userId(s.getUserId())
+                .username(s.getUsername())
+                .realName(s.getUsername())
+                .department(s.getDepartment())
+                .email(s.getEmail())
+                .build()).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public GradingResultResponse gradeSubjective(String username, String sessionId, GradeSubjectiveRequest request) {
+        User teacher = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        ExamSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("考试会话不存在"));
+
+        ExamAssignment assignment = session.getAssignment();
+        if (!assignment.getTeacher().getUserId().equals(teacher.getUserId())) {
+            throw new RuntimeException("无权评阅此考试");
+        }
+
+        double subjectiveTotal = 0;
+        for (GradeSubjectiveRequest.GradeItem item : request.getItems()) {
+            ExamSessionAnswer answer = sessionAnswerRepository
+                    .findBySessionIdAndQuestionId(sessionId, item.getQuestionId())
+                    .orElseThrow(() -> new RuntimeException("答题记录不存在: " + item.getQuestionId()));
+
+            Question q = questionRepository.findById(item.getQuestionId()).orElse(null);
+            if (q == null || !"subjective".equals(q.getQuestionType())) {
+                throw new RuntimeException("题目不存在或非主观题: " + item.getQuestionId());
+            }
+
+            answer.setScore(item.getScore());
+            answer.setFeedback(item.getFeedback());
+            sessionAnswerRepository.save(answer);
+
+            subjectiveTotal += item.getScore() != null ? item.getScore() : 0;
+        }
+
+        session.setSubjectiveScore(subjectiveTotal);
+        session.setTotalScore(session.getObjectiveScore() + subjectiveTotal);
+        sessionRepository.save(session);
+
+        return getGradingResults(username, assignment.getAssignmentId()).stream()
+                .filter(r -> r.getSessionId().equals(sessionId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("评分结果获取失败"));
     }
 }

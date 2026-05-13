@@ -207,6 +207,11 @@ public class PaperManagementService {
                     .difficulty(q.getDifficulty())
                     .knowledgeTag(q.getKnowledgeTag())
                     .score(pq.getScore())
+                    .optionA(q.getOptionA())
+                    .optionB(q.getOptionB())
+                    .optionC(q.getOptionC())
+                    .optionD(q.getOptionD())
+                    .answer(q.getAnswer())
                     .build());
         }
         resp.setQuestions(items);

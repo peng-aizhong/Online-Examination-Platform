@@ -40,4 +40,12 @@ export const getUserInfo = () => {
   return authApi.get('/auth/userinfo')
 }
 
+export const updateProfile = (data) => {
+  return authApi.put('/auth/profile', data)
+}
+
+export const changePassword = (data) => {
+  return authApi.put('/auth/password', data)
+}
+
 export default authApi

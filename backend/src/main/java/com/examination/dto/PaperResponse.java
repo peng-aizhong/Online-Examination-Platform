@@ -38,5 +38,10 @@ public class PaperResponse {
         private String difficulty;
         private String knowledgeTag;
         private Integer score;
+        private String optionA;
+        private String optionB;
+        private String optionC;
+        private String optionD;
+        private String answer;
     }
 }

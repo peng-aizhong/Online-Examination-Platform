@@ -54,16 +54,36 @@
               <span class="question-order">第{{ index + 1 }}题</span>
               <el-tag size="small" :type="q.correct ? 'success' : 'danger'">{{ q.correct ? '正确' : '错误' }}</el-tag>
               <el-tag size="small" type="info" v-if="q.knowledgeTag">{{ q.knowledgeTag }}</el-tag>
+              <el-tag size="small" type="warning" v-if="q.questionType === 'subjective'">主观题</el-tag>
               <span class="question-score">{{ q.earned }}/{{ q.score }}分</span>
             </div>
             <p class="question-content">{{ q.content }}</p>
             <div class="answer-row">
               <span>学生答案：<strong :class="q.correct ? 'correct-text' : 'wrong-text'">{{ q.yourAnswer || '未作答' }}</strong></span>
-              <span v-if="!q.correct">正确答案：<strong class="correct-text">{{ q.correctAnswer }}</strong></span>
+              <span v-if="!q.correct && q.questionType !== 'subjective'">正确答案：<strong class="correct-text">{{ q.correctAnswer }}</strong></span>
             </div>
-            <div v-if="q.feedback" class="analysis-box">
+
+            <!-- 主观题评分区域 -->
+            <div v-if="q.questionType === 'subjective' && gradingScores[q.questionId]" class="grading-box">
+              <el-row :gutter="16">
+                <el-col :span="6">
+                  <label>评分：</label>
+                  <el-input-number v-model="gradingScores[q.questionId].score" :min="0" :max="q.score" size="small" style="width:100%" />
+                </el-col>
+                <el-col :span="18">
+                  <label>评语：</label>
+                  <el-input v-model="gradingScores[q.questionId].feedback" type="textarea" :rows="2" placeholder="请输入评语" />
+                </el-col>
+              </el-row>
+            </div>
+
+            <div v-if="q.feedback && q.questionType !== 'subjective'" class="analysis-box">
               <strong>解析：</strong>{{ q.feedback }}
             </div>
+          </div>
+
+          <div v-if="selectedResult.questions.some(q => q.questionType === 'subjective')" style="text-align:right;margin-top:16px;">
+            <el-button type="primary" :loading="gradingLoading" @click="saveGrading">保存主观题评分</el-button>
           </div>
         </template>
       </el-dialog>
@@ -76,7 +96,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
-import { getTeacherGradingResults } from '../../api/teacher'
+import { getTeacherGradingResults, gradeSubjective } from '../../api/teacher'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,6 +104,8 @@ const loading = ref(false)
 const results = ref([])
 const dialogVisible = ref(false)
 const selectedResult = ref(null)
+const gradingScores = ref({})
+const gradingLoading = ref(false)
 
 const typeNames = { single: '单选题', multiple: '多选题', judge: '判断题', fill: '填空题', subjective: '主观题' }
 
@@ -99,6 +121,16 @@ const goBack = () => router.push('/teacher/analytics')
 
 const showDetail = (result) => {
   selectedResult.value = result
+  const scores = {}
+  for (const q of result.questions || []) {
+    if (q.questionType === 'subjective') {
+      scores[q.questionId] = {
+        score: q.earned || 0,
+        feedback: q.feedback || ''
+      }
+    }
+  }
+  gradingScores.value = scores
   dialogVisible.value = true
 }
 
@@ -111,6 +143,27 @@ const loadGrading = async () => {
     ElMessage.error(error.response?.data?.message || '加载阅卷数据失败')
   } finally {
     loading.value = false
+  }
+}
+
+const saveGrading = async () => {
+  if (!selectedResult.value) return
+  const items = Object.entries(gradingScores.value).map(([questionId, g]) => ({
+    questionId, score: g.score, feedback: g.feedback
+  }))
+  if (items.length === 0) return
+  gradingLoading.value = true
+  try {
+    const res = await gradeSubjective(selectedResult.value.sessionId, { items })
+    if (res.code === 200) {
+      ElMessage.success('评分保存成功')
+      dialogVisible.value = false
+      loadGrading()
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '保存失败')
+  } finally {
+    gradingLoading.value = false
   }
 }
 
@@ -131,4 +184,6 @@ onMounted(loadGrading)
 .correct-text { color: #67c23a; }
 .wrong-text { color: #f56c6c; }
 .analysis-box { margin-top: 8px; padding: 10px; background: #f5f7fa; border-radius: 6px; font-size: 13px; color: #666; line-height: 1.6; }
+.grading-box { margin-top: 12px; padding: 14px; background: #fdf6ec; border: 1px solid #e6a23c; border-radius: 6px; }
+.grading-box label { font-size: 13px; color: #606266; margin-bottom: 4px; display: block; }
 </style>

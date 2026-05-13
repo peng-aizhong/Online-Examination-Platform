@@ -1,6 +1,10 @@
 <template>
   <div class="teacher-analytics-page">
-    <el-page-header @back="goBack" content="学情分析" />
+    <el-page-header @back="goBack" content="学情分析">
+      <template #extra>
+        <el-button type="primary" @click="openPublishDialog">发布考试</el-button>
+      </template>
+    </el-page-header>
 
     <div v-loading="loading" class="analytics-content">
       <template v-if="stats.totalAssignments !== undefined">
@@ -102,22 +106,118 @@
           </el-table>
         </el-card>
       </template>
+
+      <!-- 已发布考试列表 -->
+      <el-card class="section-card">
+        <template #header>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span>已发布考试</span>
+            <el-button size="small" @click="loadAssignments">刷新</el-button>
+          </div>
+        </template>
+        <el-table :data="assignments" border v-loading="assignLoading">
+          <el-table-column prop="assignmentName" label="考试名称" min-width="160" />
+          <el-table-column prop="paperName" label="试卷" min-width="140" />
+          <el-table-column label="考试时间" min-width="200">
+            <template #default="scope">
+              {{ scope.row.examStartTime ? dayjs(scope.row.examStartTime).format('MM-DD HH:mm') : '-' }}
+              ~
+              {{ scope.row.examEndTime ? dayjs(scope.row.examEndTime).format('MM-DD HH:mm') : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="durationMinutes" label="时长(分)" width="90" />
+          <el-table-column prop="assignedStudentCount" label="指定人数" width="90" />
+          <el-table-column prop="status" label="状态" width="90">
+            <template #default="scope">
+              <el-tag :type="scope.row.status === '进行中' ? 'success' : scope.row.status === '已结束' ? 'info' : 'warning'" size="small">
+                {{ scope.row.status || '待开始' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120">
+            <template #default="scope">
+              <el-button type="primary" link @click="viewGrading(scope.row.assignmentId)">查看阅卷</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
+      <!-- 发布考试弹窗 -->
+      <el-dialog v-model="publishDialogVisible" title="发布考试" width="600px" destroy-on-close>
+        <el-form :model="publishForm" label-width="100px">
+          <el-form-item label="考试名称" required>
+            <el-input v-model="publishForm.assignmentName" placeholder="请输入考试名称" />
+          </el-form-item>
+          <el-form-item label="选择试卷" required>
+            <el-select v-model="publishForm.paperId" placeholder="请选择试卷" style="width:100%" @change="onPaperChange">
+              <el-option v-for="p in paperList" :key="p.paperId" :label="`${p.paperName}（${p.totalScore}分）`" :value="p.paperId" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="考试时间" required>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-date-picker v-model="publishForm.examStartTime" type="datetime" placeholder="开始时间" style="width:100%" value-format="YYYY-MM-DDTHH:mm:ss" />
+              </el-col>
+              <el-col :span="12">
+                <el-date-picker v-model="publishForm.examEndTime" type="datetime" placeholder="结束时间" style="width:100%" value-format="YYYY-MM-DDTHH:mm:ss" />
+              </el-col>
+            </el-row>
+          </el-form-item>
+          <el-form-item label="考试时长" required>
+            <el-input-number v-model="publishForm.durationMinutes" :min="10" :max="300" :step="10" />
+            <span style="margin-left:8px;color:#999">分钟</span>
+          </el-form-item>
+          <el-form-item label="最大次数">
+            <el-input-number v-model="publishForm.maxAttempts" :min="1" :max="10" />
+          </el-form-item>
+          <el-form-item label="指定学生" required>
+            <el-checkbox-group v-model="publishForm.studentIds">
+              <el-checkbox v-for="s in studentList" :key="s.userId" :value="s.userId">
+                {{ s.realName || s.username }}（{{ s.department || '未分班' }}）
+              </el-checkbox>
+            </el-checkbox-group>
+            <div v-if="studentList.length === 0" style="color:#999;font-size:13px">暂无学生数据</div>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="publishDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="publishLoading" @click="handlePublish">确认发布</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import * as echarts from 'echarts'
-import { getTeacherStatistics } from '../../api/teacher'
+import { getTeacherStatistics, getPapers, getStudentList, getTeacherAssignments, createAssignment } from '../../api/teacher'
 
 const router = useRouter()
 const loading = ref(false)
 const stats = ref({})
 const distributionChartRef = ref(null)
 const weakChartRef = ref(null)
+
+// 发布考试
+const publishDialogVisible = ref(false)
+const publishLoading = ref(false)
+const paperList = ref([])
+const studentList = ref([])
+const assignments = ref([])
+const assignLoading = ref(false)
+const publishForm = reactive({
+  assignmentName: '',
+  paperId: '',
+  examStartTime: '',
+  examEndTime: '',
+  durationMinutes: 60,
+  maxAttempts: 1,
+  studentIds: []
+})
 
 const goBack = () => router.push('/dashboard')
 const viewGrading = (assignmentId) => router.push(`/teacher/grading/${assignmentId}`)
@@ -180,7 +280,62 @@ const renderCharts = () => {
   }
 }
 
-onMounted(loadStatistics)
+const openPublishDialog = async () => {
+  Object.assign(publishForm, {
+    assignmentName: '', paperId: '', examStartTime: '', examEndTime: '',
+    durationMinutes: 60, maxAttempts: 1, studentIds: []
+  })
+  try {
+    const [papersRes, studentsRes] = await Promise.all([getPapers(), getStudentList()])
+    if (papersRes.code === 200) paperList.value = papersRes.data || []
+    if (studentsRes.code === 200) studentList.value = studentsRes.data || []
+  } catch {}
+  publishDialogVisible.value = true
+}
+
+const onPaperChange = (paperId) => {
+  const paper = paperList.value.find(p => p.paperId === paperId)
+  if (paper && paper.duration) publishForm.durationMinutes = paper.duration
+}
+
+const handlePublish = async () => {
+  if (!publishForm.assignmentName || !publishForm.paperId || !publishForm.examStartTime || !publishForm.examEndTime) {
+    ElMessage.warning('请填写必填项')
+    return
+  }
+  if (publishForm.studentIds.length === 0) {
+    ElMessage.warning('请至少选择一名学生')
+    return
+  }
+  publishLoading.value = true
+  try {
+    const res = await createAssignment(publishForm)
+    if (res.code === 200) {
+      ElMessage.success('考试发布成功')
+      publishDialogVisible.value = false
+      loadAssignments()
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '发布失败')
+  } finally {
+    publishLoading.value = false
+  }
+}
+
+const loadAssignments = async () => {
+  assignLoading.value = true
+  try {
+    const res = await getTeacherAssignments()
+    if (res.code === 200) assignments.value = res.data || []
+  } catch {} finally {
+    assignLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadStatistics()
+  loadAssignments()
+})
 </script>
 
 <style scoped>
