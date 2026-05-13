@@ -1,0 +1,145 @@
+package com.examination.service;
+
+import com.examination.dto.*;
+import com.examination.entity.User;
+import com.examination.repository.UserRepository;
+import com.examination.security.JwtTokenProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Service
+@Transactional
+public class AuthService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    public LoginResponse login(LoginRequest loginRequest) {
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new RuntimeException("用户账户已被禁用");
+        }
+
+        String storedPassword = user.getPassword();
+        boolean passwordMatch = false;
+        if (storedPassword != null && storedPassword.startsWith("$2a$")) {
+            passwordMatch = passwordEncoder.matches(loginRequest.getPassword(), storedPassword);
+        } else {
+            passwordMatch = loginRequest.getPassword() != null && loginRequest.getPassword().equals(storedPassword);
+        }
+        if (!passwordMatch) {
+            throw new RuntimeException("密码错误");
+        }
+
+        if (loginRequest.getRole() != null && !loginRequest.getRole().isBlank()) {
+            String requestRole = loginRequest.getRole().trim().toLowerCase();
+            if (!user.getRole().name().equals(requestRole)) {
+                throw new RuntimeException("用户身份不匹配");
+            }
+        }
+
+        String token = jwtTokenProvider.generateToken(user.getUsername());
+        UserResponse userResponse = UserResponse.fromEntity(user);
+
+        return LoginResponse.builder()
+                .token(token)
+                .userInfo(userResponse)
+                .build();
+    }
+
+    public UserResponse register(RegisterRequest registerRequest) {
+        if (userRepository.existsByUsername(registerRequest.getUsername())) {
+            throw new RuntimeException("用户名已存在");
+        }
+
+        if (registerRequest.getEmail() != null && !registerRequest.getEmail().isBlank()
+                && userRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new RuntimeException("邮箱已被注册");
+        }
+
+        User.UserRole role;
+        try {
+            role = User.UserRole.valueOf(registerRequest.getRole().toLowerCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("无效的用户角色");
+        }
+
+        String userId = registerRequest.getUserId();
+        if (userId == null || userId.isBlank()) {
+            userId = "U" + System.currentTimeMillis() % 1000000000;
+        }
+
+        User user = User.builder()
+                .userId(userId)
+                .username(registerRequest.getUsername())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(role)
+                .department(registerRequest.getDepartment())
+                .phone(registerRequest.getPhone())
+                .active(true)
+                .build();
+
+        user = userRepository.save(user);
+        return UserResponse.fromEntity(user);
+    }
+
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        return UserResponse.fromEntity(user);
+    }
+
+    public UserResponse updateProfile(String username, ProfileUpdateRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()
+                && !request.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("邮箱已被占用");
+        }
+
+        if (request.getEmail() != null) user.setEmail(request.getEmail().isBlank() ? null : request.getEmail());
+        if (request.getPhone() != null) user.setPhone(request.getPhone().isBlank() ? null : request.getPhone());
+        if (request.getDepartment() != null) user.setDepartment(request.getDepartment().isBlank() ? null : request.getDepartment());
+
+        user = userRepository.save(user);
+        return UserResponse.fromEntity(user);
+    }
+
+    public void changePassword(String username, PasswordChangeRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        String storedPassword = user.getPassword();
+        boolean oldPasswordMatch;
+        if (storedPassword != null && storedPassword.startsWith("$2a$")) {
+            oldPasswordMatch = passwordEncoder.matches(request.getOldPassword(), storedPassword);
+        } else {
+            oldPasswordMatch = request.getOldPassword() != null && request.getOldPassword().equals(storedPassword);
+        }
+
+        if (!oldPasswordMatch) {
+            throw new RuntimeException("原密码错误");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+            throw new RuntimeException("新密码长度不能少于6位");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+}
