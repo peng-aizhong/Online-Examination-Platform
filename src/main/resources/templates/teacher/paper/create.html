@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建试卷 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .question-item {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .question-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        
+        .question-item.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .question-item.selected .form-check-input {
+            background-color: #2196f3;
+            border-color: #2196f3;
+        }
+        
+        .question-type-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+        }
+        
+        .difficulty-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+        }
+        
+        .selected-questions {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .selected-question-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .score-input {
+            width: 60px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/teacher">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 教师端
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/teacher/papers">
+                    <i class="fas fa-arrow-left me-1"></i>返回试卷列表
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">教师功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/questions">
+                                <i class="fas fa-file-alt me-2"></i>题库管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/teacher/papers">
+                                <i class="fas fa-list me-2"></i>试卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/exams">
+                                <i class="fas fa-calendar me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/grading">
+                                <i class="fas fa-chart-bar me-2"></i>阅卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/resources">
+                                <i class="fas fa-book me-2"></i>学习资源
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-plus me-2"></i>创建试卷</h2>
+                    <a href="/teacher/papers" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>返回列表
+                    </a>
+                </div>
+
+                <form method="post" action="/teacher/papers" id="createPaperForm">
+                    <div class="row">
+                        <!-- 试卷基本信息 -->
+                        <div class="col-md-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>试卷信息</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">试卷名称 <span class="text-danger">*</span></label>
+                                        <input type="text" name="paperName" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">科目 <span class="text-danger">*</span></label>
+                                        <select name="subjectId" class="form-select" required>
+                                            <option value="">请选择科目</option>
+                                            <option th:each="subject : ${subjects}" 
+                                                    th:value="${subject.subjectId}"
+                                                    th:text="${subject.subjectName}">科目名称</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">考试时长（分钟） <span class="text-danger">*</span></label>
+                                        <input type="number" name="duration" class="form-control" value="120" min="30" max="300" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">总分值 <span class="text-danger">*</span></label>
+                                        <input type="number" name="totalScore" class="form-control" value="100" min="50" max="200" required onchange="calculateQuestionScores()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">难度系数</label>
+                                        <select name="difficultyLevel" class="form-select" onchange="updateDifficultyDescription()">
+                                            <option value="easy">简单 - 主要包含易、中难度题目</option>
+                                            <option value="medium" selected>中等 - 平衡的难度分布</option>
+                                            <option value="hard">困难 - 包含较多高难度题目</option>
+                                        </select>
+                                        <small class="text-muted" id="difficultyDescription">平衡的难度分布，简单30%、中等50%、困难20%</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">及格分数</label>
+                                        <input type="number" name="passingScore" class="form-control" value="60" min="0" max="200" placeholder="请输入及格分数">
+                                        <small class="text-muted">学生需要达到此分数才算及格</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">试卷描述</label>
+                                        <textarea name="description" class="form-control" rows="3" placeholder="请输入试卷描述（可选）"></textarea>
+                                        <small class="text-muted">可以描述试卷的考试范围、注意事项等</small>
+                                    </div>
+                                    
+                                    <!-- 题型分布配置 -->
+                                    <div class="mb-3">
+                                        <label class="form-label">题型分布</label>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4">
+                                                <small class="text-muted">选择题</small>
+                                                <input type="number" class="form-control form-control-sm" id="choiceCount" value="10" min="0" max="50" placeholder="数量" onchange="calculateQuestionScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">分数占比(%)</small>
+                                                <input type="number" class="form-control form-control-sm" id="choicePercent" value="20" min="0" max="100" step="0.1" placeholder="占比" onchange="validateAndCalculateScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">每题分数</small>
+                                                <input type="number" class="form-control form-control-sm" id="choiceScore" value="2" min="0" max="50" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4">
+                                                <small class="text-muted">填空题</small>
+                                                <input type="number" class="form-control form-control-sm" id="fillCount" value="5" min="0" max="30" placeholder="数量" onchange="calculateQuestionScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">分数占比(%)</small>
+                                                <input type="number" class="form-control form-control-sm" id="fillPercent" value="15" min="0" max="100" step="0.1" placeholder="占比" onchange="validateAndCalculateScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">每题分数</small>
+                                                <input type="number" class="form-control form-control-sm" id="fillScore" value="3" min="0" max="50" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4">
+                                                <small class="text-muted">程序运行结果题</small>
+                                                <input type="number" class="form-control form-control-sm" id="resultCount" value="3" min="0" max="20" placeholder="数量" onchange="calculateQuestionScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">分数占比(%)</small>
+                                                <input type="number" class="form-control form-control-sm" id="resultPercent" value="15" min="0" max="100" step="0.1" placeholder="占比" onchange="validateAndCalculateScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">每题分数</small>
+                                                <input type="number" class="form-control form-control-sm" id="resultScore" value="5" min="0" max="50" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4">
+                                                <small class="text-muted">简答题</small>
+                                                <input type="number" class="form-control form-control-sm" id="shortCount" value="2" min="0" max="15" placeholder="数量" onchange="calculateQuestionScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">分数占比(%)</small>
+                                                <input type="number" class="form-control form-control-sm" id="shortPercent" value="30" min="0" max="100" step="0.1" placeholder="占比" onchange="validateAndCalculateScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">每题分数</small>
+                                                <input type="number" class="form-control form-control-sm" id="shortScore" value="15" min="0" max="50" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4">
+                                                <small class="text-muted">编程题</small>
+                                                <input type="number" class="form-control form-control-sm" id="programCount" value="1" min="0" max="10" placeholder="数量" onchange="calculateQuestionScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">分数占比(%)</small>
+                                                <input type="number" class="form-control form-control-sm" id="programPercent" value="20" min="0" max="100" step="0.1" placeholder="占比" onchange="validateAndCalculateScores()">
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">每题分数</small>
+                                                <input type="number" class="form-control form-control-sm" id="programScore" value="20" min="0" max="50" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">请设置各题型的数量和分数占比，系统会自动计算每题分数</small>
+                                        </div>
+                                        <div class="mt-2">
+                                            <strong>预计总分: <span id="calculatedTotalScore">100</span></strong>
+                                            <br>
+                                            <small class="text-muted">总占比: <span id="totalPercentDisplay">100</span>%</small>
+                                        </div>
+                                        
+                                        <!-- 试卷预览按钮 -->
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="previewPaper()">
+                                                <i class="fas fa-eye me-2"></i>预览试卷
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 试卷预览区域 -->
+                                    <div id="paperPreviewArea" class="mt-3" style="display: none;">
+                                        <div class="card">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>试卷预览</h6>
+                                            </div>
+                                            <div class="card-body p-3">
+                                                <div id="paperPreviewContent">
+                                                    <!-- 预览内容将在这里显示 -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 随机选题按钮 -->
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-success" onclick="autoGeneratePaper()">
+                                            <i class="fas fa-magic me-2"></i>智能随机选题
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="clearAllQuestions()">
+                                            <i class="fas fa-trash me-2"></i>清空所有题目
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 已选题目 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>已选题目</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="selectedQuestions" class="selected-questions">
+                                        <p class="text-muted text-center">请从右侧选择题目</p>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <strong>题目数量: <span id="questionCount">0</span></strong>
+                                        <strong>总分: <span id="totalScore">0</span></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 题目选择 -->
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-search me-2"></i>选择题目</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 筛选条件 -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">题型</label>
+                                            <select id="questionTypeFilter" class="form-select">
+                                                <option value="">全部题型</option>
+                                                <option value="C">选择题</option>
+                                                <option value="F">填空题</option>
+                                                <option value="R">程序运行结果题</option>
+                                                <option value="S">简答题</option>
+                                                <option value="P">编程题</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">难度</label>
+                                            <select id="difficultyFilter" class="form-select">
+                                                <option value="">全部难度</option>
+                                                <option value="easy">简单</option>
+                                                <option value="medium">中等</option>
+                                                <option value="hard">困难</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">关键词</label>
+                                            <input type="text" id="keywordFilter" class="form-control" placeholder="搜索题目内容">
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button type="button" class="btn btn-outline-primary w-100" onclick="loadQuestions()">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 题目列表 -->
+                                    <div id="questionList">
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">请选择筛选条件并点击搜索</h5>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 分页控件 -->
+                                    <div id="paginationContainer" class="mt-3" style="display: none;">
+                                        <nav aria-label="题目分页">
+                                            <ul class="pagination justify-content-center" id="pagination">
+                                                <!-- 分页按钮将在这里动态生成 -->
+                                            </ul>
+                                        </nav>
+                                        <div class="text-center mt-2">
+                                            <small class="text-muted">
+                                                显示第 <span id="currentPageInfo">1</span> 页，
+                                                共 <span id="totalPagesInfo">1</span> 页，
+                                                总计 <span id="totalQuestionsInfo">0</span> 道题目
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="row mt-4">
+                        <div class="col-12 text-center">
+                            <button type="submit" class="btn btn-primary btn-lg me-3">
+                                <i class="fas fa-save me-2"></i>创建试卷
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg me-3" onclick="previewPaper()">
+                                <i class="fas fa-eye me-2"></i>预览试卷
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg me-3" onclick="clearAllQuestions()">
+                                <i class="fas fa-trash me-2"></i>清空题目
+                            </button>
+                            <a href="/teacher/papers" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>返回列表
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedQuestions = new Map();
+        
+        // 加载题目列表
+        function loadQuestions() {
+            const subjectId = document.querySelector('select[name="subjectId"]').value;
+            const questionType = document.getElementById('questionTypeFilter').value;
+            const difficulty = document.getElementById('difficultyFilter').value;
+            const keyword = document.getElementById('keywordFilter').value;
+            const page = document.getElementById('currentPage') ? parseInt(document.getElementById('currentPage').value) : 1; // 获取当前页码
+            
+            console.log('开始加载题目', {subjectId, questionType, difficulty, keyword, page});
+            
+            if (!subjectId) {
+                alert('请先选择科目');
+                return;
+            }
+            
+            // 构建查询参数
+            const params = new URLSearchParams();
+            params.append('subjectId', subjectId);
+            params.append('page', page - 1); // 后端页码从0开始，前端从1开始
+            params.append('size', 20); // 每页显示20道题目
+            
+            // 只有当选择了具体题型时才添加题型参数
+            if (questionType && questionType !== '') {
+                params.append('questionType', questionType);
+            }
+            
+            // 只有当选择了具体难度时才添加难度参数
+            if (difficulty && difficulty !== '') {
+                params.append('difficulty', difficulty);
+            }
+            
+            // 只有当输入了关键词时才添加搜索参数
+            if (keyword && keyword.trim() !== '') {
+                params.append('search', keyword.trim());
+            }
+            
+            console.log('请求参数:', params.toString());
+            
+            // 发送AJAX请求获取题目
+            fetch('/teacher/questions/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params
+            })
+                .then(response => {
+                    console.log('响应状态:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('响应数据:', data);
+                    if (data.success) {
+                        console.log('找到题目数量:', data.totalElements);
+                        displayQuestions(data.questions || [], data.totalPages, data.currentPage + 1, data.totalElements);
+                    } else {
+                        console.error('搜索失败:', data.message);
+                        alert('搜索失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载题目失败:', error);
+                    alert('加载题目失败，请重试');
+                });
+        }
+        
+        // 显示题目列表
+        function displayQuestions(questions, totalPages, currentPage, totalQuestions) {
+            const questionList = document.getElementById('questionList');
+            const paginationContainer = document.getElementById('paginationContainer');
+            const currentPageInfo = document.getElementById('currentPageInfo');
+            const totalPagesInfo = document.getElementById('totalPagesInfo');
+            const totalQuestionsInfo = document.getElementById('totalQuestionsInfo');
+
+            if (questions.length === 0) {
+                questionList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">未找到符合条件的题目</h5>
+                    </div>
+                `;
+                paginationContainer.style.display = 'none';
+                return;
+            }
+            
+            questionList.innerHTML = questions.map(question => `
+                <div class="question-item" onclick="toggleQuestion('${question.id}')">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="question_${question.id}" 
+                               ${selectedQuestions.has(question.id) ? 'checked' : ''}>
+                        <label class="form-check-label" for="question_${question.id}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-2">
+                                        <strong>ID: ${question.id}</strong><br>
+                                        <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.9em; max-height: 100px; overflow-y: auto;">${question.content || '无内容'}</div>
+                                        ${question.questionType === 'C' ? generateOptionsDisplay(question) : ''}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-primary question-type-badge">${getQuestionTypeName(question.questionType)}</span>
+                                        <span class="badge bg-secondary difficulty-badge">${getDifficultyName(question.difficulty)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+            
+            paginationContainer.style.display = 'block';
+            currentPageInfo.textContent = currentPage;
+            totalPagesInfo.textContent = totalPages;
+            totalQuestionsInfo.textContent = totalQuestions;
+            
+            // 生成分页按钮
+            generatePaginationButtons(currentPage, totalPages);
+        }
+        
+        // 生成分页按钮
+        function generatePaginationButtons(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            currentPage = parseInt(currentPage);
+            totalPages = parseInt(totalPages);
+            
+            let paginationHtml = '';
+            
+            // 上一页按钮
+            if (currentPage > 1) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                `;
+            } else {
+                paginationHtml += `
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-chevron-left"></i>
+                        </span>
+                    </li>
+                `;
+            }
+            
+            // 页码按钮
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(1)">1</a>
+                    </li>
+                `;
+                if (startPage > 2) {
+                    paginationHtml += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    paginationHtml += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHtml += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
+                }
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(${totalPages})">${totalPages}</a>
+                    </li>
+                `;
+            }
+            
+            // 下一页按钮
+            if (currentPage < totalPages) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                `;
+            } else {
+                paginationHtml += `
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </li>
+                `;
+            }
+            
+            pagination.innerHTML = paginationHtml;
+        }
+        
+        // 切换页码
+        function changePage(page) {
+            // 更新当前页码
+            if (!document.getElementById('currentPage')) {
+                const currentPageInput = document.createElement('input');
+                currentPageInput.type = 'hidden';
+                currentPageInput.id = 'currentPage';
+                currentPageInput.value = '1';
+                document.getElementById('createPaperForm').appendChild(currentPageInput);
+            }
+            document.getElementById('currentPage').value = page;
+            
+            // 重新加载题目
+            loadQuestions();
+        }
+        
+        // 切换题目选择状态
+        function toggleQuestion(questionId) {
+            const checkbox = document.getElementById(`question_${questionId}`);
+            const questionItem = checkbox.closest('.question-item');
+            
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                selectedQuestions.delete(questionId);
+                questionItem.classList.remove('selected');
+            } else {
+                checkbox.checked = true;
+                
+                // 从题目元素中获取题型信息
+                const typeBadge = questionItem.querySelector('.question-type-badge');
+                let questionType = 'C'; // 默认选择题
+                if (typeBadge) {
+                    const typeText = typeBadge.textContent;
+                    if (typeText === '选择题') questionType = 'C';
+                    else if (typeText === '填空题') questionType = 'F';
+                    else if (typeText === '程序运行结果题') questionType = 'R';
+                    else if (typeText === '简答题') questionType = 'S';
+                    else if (typeText === '编程题') questionType = 'P';
+                }
+                
+                // 获取题目内容
+                const contentDiv = questionItem.querySelector('div[style*="font-family: monospace"]');
+                const content = contentDiv ? contentDiv.textContent : '题目内容';
+                
+                // 获取题目选项
+                const optionsDiv = questionItem.querySelector('.question-options');
+                let options = '';
+                if (optionsDiv) {
+                    const optionElements = optionsDiv.querySelectorAll('.question-option');
+                    options = Array.from(optionElements).map(opt => opt.textContent.trim()).join('|');
+                }
+                
+                // 获取难度信息
+                const difficultyBadge = questionItem.querySelector('.difficulty-badge');
+                let difficulty = 'medium';
+                if (difficultyBadge) {
+                    const difficultyText = difficultyBadge.textContent;
+                    if (difficultyText === '简单') difficulty = 'easy';
+                    else if (difficultyText === '困难') difficulty = 'hard';
+                }
+                
+                selectedQuestions.set(questionId, {
+                    id: questionId,
+                    content: content,
+                    questionType: questionType,
+                    difficulty: difficulty,
+                    options: options,
+                    score: getDefaultScoreByType(questionType)
+                });
+                questionItem.classList.add('selected');
+            }
+            
+            updateSelectedQuestions();
+        }
+        
+        // 更新已选题目显示
+        function updateSelectedQuestions() {
+            const container = document.getElementById('selectedQuestions');
+            const questionCount = document.getElementById('questionCount');
+            const totalScore = document.getElementById('totalScore');
+            
+            if (selectedQuestions.size === 0) {
+                container.innerHTML = '<p class="text-muted text-center">请从右侧选择题目</p>';
+                questionCount.textContent = '0';
+                totalScore.textContent = '0';
+                return;
+            }
+            
+            let total = 0;
+            const questionsHtml = Array.from(selectedQuestions.values()).map(question => {
+                total += question.score;
+                return `
+                    <div class="selected-question-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <small class="text-muted">题目ID: ${question.id}</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <input type="number" class="form-control score-input me-2" 
+                                       value="${question.score}" min="1" max="100"
+                                       onchange="updateQuestionScore('${question.id}', this.value)">
+                                <span class="text-muted">分</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
+                                        onclick="removeQuestion('${question.id}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = questionsHtml;
+            questionCount.textContent = selectedQuestions.size;
+            totalScore.textContent = total;
+        }
+        
+        // 更新题目分数
+        function updateQuestionScore(questionId, score) {
+            if (selectedQuestions.has(questionId)) {
+                selectedQuestions.get(questionId).score = parseInt(score) || 1;
+                updateSelectedQuestions();
+            }
+        }
+        
+        // 移除题目
+        function removeQuestion(questionId) {
+            selectedQuestions.delete(questionId);
+            const checkbox = document.getElementById(`question_${questionId}`);
+            if (checkbox) {
+                checkbox.checked = false;
+                checkbox.closest('.question-item').classList.remove('selected');
+            }
+            updateSelectedQuestions();
+        }
+        
+        // 获取题型名称
+        function getQuestionTypeName(type) {
+            const types = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return types[type] || type;
+        }
+        
+        // 获取难度名称
+        function getDifficultyName(difficulty) {
+            const difficulties = {
+                'easy': '简单',
+                'medium': '中等',
+                'hard': '困难'
+            };
+            return difficulties[difficulty] || difficulty;
+        }
+        
+        // 生成选择题选项显示
+        function generateOptionsDisplay(question) {
+            if (!question || question.questionType !== 'C') return '';
+            
+            const options = [question.optionA, question.optionB, question.optionC, question.optionD].filter(opt => opt && opt.trim() !== '');
+            if (options.length === 0) return '';
+            
+            let html = '<div class="question-options mt-2" style="font-size: 0.85em; color: #666;">';
+            options.forEach((option, index) => {
+                const optionLabel = String.fromCharCode(65 + index); // A, B, C, D...
+                html += `<div class="mb-1"><strong>${optionLabel}.</strong> ${option}</div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+        
+        // 获取默认分数
+        function getDefaultScore(questionId) {
+            // 根据题型获取默认分数
+            const question = selectedQuestions.get(questionId);
+            if (question && question.questionType) {
+                return getDefaultScoreByType(question.questionType);
+            }
+            return 5; // 默认分数
+        }
+        
+        // 根据题型获取默认分数
+        function getDefaultScoreByType(questionType) {
+            const totalScore = parseInt(document.querySelector('input[name="totalScore"]').value) || 100;
+            
+            // 根据题型占比计算分数
+            switch (questionType) {
+                case 'C': // 选择题
+                    const choiceCount = parseInt(document.getElementById('choiceCount').value) || 1;
+                    const choicePercent = parseFloat(document.getElementById('choicePercent').value) || 20;
+                    return choiceCount > 0 ? Math.round((totalScore * (choicePercent / 100)) / choiceCount) : 2;
+                case 'F': // 填空题
+                    const fillCount = parseInt(document.getElementById('fillCount').value) || 1;
+                    const fillPercent = parseFloat(document.getElementById('fillPercent').value) || 15;
+                    return fillCount > 0 ? Math.round((totalScore * (fillPercent / 100)) / fillCount) : 3;
+                case 'R': // 程序运行结果题
+                    const resultCount = parseInt(document.getElementById('resultCount').value) || 1;
+                    const resultPercent = parseFloat(document.getElementById('resultPercent').value) || 15;
+                    return resultCount > 0 ? Math.round((totalScore * (resultPercent / 100)) / resultCount) : 5;
+                case 'S': // 简答题
+                    const shortCount = parseInt(document.getElementById('shortCount').value) || 1;
+                    const shortPercent = parseFloat(document.getElementById('shortPercent').value) || 30;
+                    return shortCount > 0 ? Math.round((totalScore * (shortPercent / 100)) / shortCount) : 8;
+                case 'P': // 编程题
+                    const programCount = parseInt(document.getElementById('programCount').value) || 1;
+                    const programPercent = parseFloat(document.getElementById('programPercent').value) || 20;
+                    return programCount > 0 ? Math.round((totalScore * (programPercent / 100)) / programCount) : 15;
+                default:
+                    return 5;
+            }
+        }
+        
+        // 表单提交前验证
+        document.getElementById('createPaperForm').addEventListener('submit', function(e) {
+            if (selectedQuestions.size === 0) {
+                e.preventDefault();
+                alert('请至少选择一道题目');
+                return;
+            }
+            
+            // 验证必填字段
+            const paperName = document.querySelector('input[name="paperName"]').value.trim();
+            const subjectId = document.querySelector('select[name="subjectId"]').value;
+            const duration = document.querySelector('input[name="duration"]').value;
+            const totalScore = document.querySelector('input[name="totalScore"]').value;
+            const difficultyLevel = document.querySelector('select[name="difficultyLevel"]').value;
+            
+            if (!paperName || !subjectId || !duration || !totalScore) {
+                e.preventDefault();
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            // 清除已存在的隐藏字段
+            const existingInputs = this.querySelectorAll('input[name="questionIds"], input[name="questionScores"]');
+            existingInputs.forEach(input => input.remove());
+            
+            // 添加选中的题目ID和分数到表单
+            const questionData = Array.from(selectedQuestions.values());
+            questionData.forEach(question => {
+                // 添加题目ID
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'questionIds';
+                idInput.value = question.id;
+                this.appendChild(idInput);
+                
+                // 添加题目分数
+                const scoreInput = document.createElement('input');
+                scoreInput.type = 'hidden';
+                scoreInput.name = 'questionScores';
+                scoreInput.value = question.score;
+                this.appendChild(scoreInput);
+            });
+            
+            // 注意：difficultyLevel 已经通过 select[name="difficultyLevel"] 自动绑定，不需要重复添加
+            
+            // 调试信息
+            console.log('=== 表单提交调试信息 ===');
+            console.log('难度级别值:', difficultyLevel);
+            console.log('难度级别类型:', typeof difficultyLevel);
+            console.log('难度级别长度:', difficultyLevel ? difficultyLevel.length : 'null');
+            
+            // 添加题型分布信息
+            const choiceCountInput = document.createElement('input');
+            choiceCountInput.type = 'hidden';
+            choiceCountInput.name = 'choiceCount';
+            choiceCountInput.value = document.getElementById('choiceCount').value;
+            this.appendChild(choiceCountInput);
+            
+            const fillCountInput = document.createElement('input');
+            fillCountInput.type = 'hidden';
+            fillCountInput.name = 'fillCount';
+            fillCountInput.value = document.getElementById('fillCount').value;
+            this.appendChild(fillCountInput);
+            
+            const resultCountInput = document.createElement('input');
+            resultCountInput.type = 'hidden';
+            resultCountInput.name = 'resultCount';
+            resultCountInput.value = document.getElementById('resultCount').value;
+            this.appendChild(resultCountInput);
+            
+            const shortCountInput = document.createElement('input');
+            shortCountInput.type = 'hidden';
+            shortCountInput.name = 'shortCount';
+            shortCountInput.value = document.getElementById('shortCount').value;
+            this.appendChild(shortCountInput);
+            
+            const programCountInput = document.createElement('input');
+            programCountInput.type = 'hidden';
+            programCountInput.name = 'programCount';
+            programCountInput.value = document.getElementById('programCount').value;
+            this.appendChild(programCountInput);
+            
+            // 添加分数占比信息
+            const choicePercentInput = document.createElement('input');
+            choicePercentInput.type = 'hidden';
+            choicePercentInput.name = 'choicePercent';
+            choicePercentInput.value = document.getElementById('choicePercent').value;
+            this.appendChild(choicePercentInput);
+            
+            const fillPercentInput = document.createElement('input');
+            fillPercentInput.type = 'hidden';
+            fillPercentInput.name = 'fillPercent';
+            fillPercentInput.value = document.getElementById('fillPercent').value;
+            this.appendChild(fillPercentInput);
+            
+            const resultPercentInput = document.createElement('input');
+            resultPercentInput.type = 'hidden';
+            resultPercentInput.name = 'resultPercent';
+            resultPercentInput.value = document.getElementById('resultPercent').value;
+            this.appendChild(resultPercentInput);
+            
+            const shortPercentInput = document.createElement('input');
+            shortPercentInput.type = 'hidden';
+            shortPercentInput.name = 'shortPercent';
+            shortPercentInput.value = document.getElementById('shortPercent').value;
+            this.appendChild(shortPercentInput);
+            
+            const programPercentInput = document.createElement('input');
+            programPercentInput.type = 'hidden';
+            programPercentInput.name = 'programPercent';
+            programPercentInput.value = document.getElementById('programPercent').value;
+            this.appendChild(programPercentInput);
+            
+            // 计算并添加实际总分
+            const actualTotalScore = questionData.reduce((sum, q) => sum + q.score, 0);
+            const actualTotalScoreInput = document.createElement('input');
+            actualTotalScoreInput.type = 'hidden';
+            actualTotalScoreInput.name = 'actualTotalScore';
+            actualTotalScoreInput.value = actualTotalScore;
+            this.appendChild(actualTotalScoreInput);
+            
+            console.log('提交试卷数据:', {
+                paperName: paperName,
+                subjectId: subjectId,
+                duration: duration,
+                totalScore: totalScore,
+                difficultyLevel: difficultyLevel,
+                questionCount: questionData.length,
+                actualTotalScore: actualTotalScore
+            });
+        });
+        
+        // 科目选择变化时重新加载题目
+        document.querySelector('select[name="subjectId"]').addEventListener('change', function() {
+            if (this.value) {
+                // 重置页码到第一页
+                if (document.getElementById('currentPage')) {
+                    document.getElementById('currentPage').value = '1';
+                }
+                loadQuestions();
+            }
+        });
+        
+        // 筛选条件变化时重置页码
+        document.getElementById('questionTypeFilter').addEventListener('change', function() {
+            if (document.getElementById('currentPage')) {
+                document.getElementById('currentPage').value = '1';
+            }
+        });
+        
+        document.getElementById('difficultyFilter').addEventListener('change', function() {
+            if (document.getElementById('currentPage')) {
+                document.getElementById('currentPage').value = '1';
+                }
+        });
+        
+        // 关键词输入框变化时重置页码
+        document.getElementById('keywordFilter').addEventListener('input', function() {
+            if (document.getElementById('currentPage')) {
+                document.getElementById('currentPage').value = '1';
+            }
+        });
+
+        // 智能随机选题
+        function autoGeneratePaper() {
+            const subjectId = document.querySelector('select[name="subjectId"]').value;
+            const difficultyLevel = document.querySelector('select[name="difficultyLevel"]').value;
+            const choiceCount = parseInt(document.getElementById('choiceCount').value) || 0;
+            const fillCount = parseInt(document.getElementById('fillCount').value) || 0;
+            const resultCount = parseInt(document.getElementById('resultCount').value) || 0;
+            const shortCount = parseInt(document.getElementById('shortCount').value) || 0;
+            const programCount = parseInt(document.getElementById('programCount').value) || 0;
+
+            if (!subjectId) {
+                alert('请先选择科目');
+                return;
+            }
+
+            if (choiceCount + fillCount + resultCount + shortCount + programCount === 0) {
+                alert('请至少设置一种题型的数量');
+                return;
+            }
+
+            // 清空已选题目
+            selectedQuestions.clear();
+
+            const params = new URLSearchParams({
+                subjectId: subjectId,
+                difficultyLevel: difficultyLevel,
+                choiceCount: choiceCount,
+                fillCount: fillCount,
+                resultCount: resultCount,
+                shortCount: shortCount,
+                programCount: programCount
+            });
+
+            fetch('/teacher/papers/auto-generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 将选中的题目添加到selectedQuestions中，使用正确的分数
+                    data.questions.forEach(question => {
+                        // 根据题型获取正确的分数
+                        let score = 0;
+                        switch (question.questionType) {
+                            case 'C': // 选择题
+                                score = parseInt(document.getElementById('choiceScore').value) || 2;
+                                break;
+                            case 'F': // 填空题
+                                score = parseInt(document.getElementById('fillScore').value) || 3;
+                                break;
+                            case 'R': // 程序运行结果题
+                                score = parseInt(document.getElementById('resultScore').value) || 5;
+                                break;
+                            case 'S': // 简答题
+                                score = parseInt(document.getElementById('shortScore').value) || 15;
+                                break;
+                            case 'P': // 编程题
+                                score = parseInt(document.getElementById('programScore').value) || 20;
+                                break;
+                            default:
+                                score = 5;
+                        }
+                        
+                        selectedQuestions.set(question.id, {
+                            id: question.id,
+                            content: question.content,
+                            questionType: question.questionType,
+                            difficulty: question.difficulty,
+                            optionA: question.optionA || '',
+                            optionB: question.optionB || '',
+                            optionC: question.optionC || '',
+                            optionD: question.optionD || '',
+                            score: score
+                        });
+                    });
+                    
+                    alert('智能随机选题成功！共选择' + data.questions.length + '道题目');
+                    updateSelectedQuestions();
+                    
+                    // 更新题目列表显示
+                    displaySelectedQuestionsInList(data.questions);
+                    
+                    // 重新计算分数
+                    calculateQuestionScores();
+                } else {
+                    alert('智能随机选题失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('智能随机选题失败:', error);
+                alert('智能随机选题失败，请重试');
+            });
+        }
+        
+        // 在题目列表中显示已选中的题目
+        function displaySelectedQuestionsInList(questions) {
+            const questionList = document.getElementById('questionList');
+            
+            if (questions.length === 0) {
+                questionList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">未找到符合条件的题目</h5>
+                    </div>
+                `;
+                return;
+            }
+            
+            questionList.innerHTML = questions.map(question => `
+                <div class="question-item selected" onclick="toggleQuestion('${question.id}')">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="question_${question.id}" 
+                               checked>
+                        <label class="form-check-label" for="question_${question.id}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-2">
+                                        <strong>ID: ${question.id}</strong><br>
+                                        <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.9em; max-height: 100px; overflow-y: auto;">${question.content || '无内容'}</div>
+                                        ${question.questionType === 'C' ? generateOptionsDisplay(question) : ''}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-primary question-type-badge">${getQuestionTypeName(question.questionType)}</span>
+                                        <span class="badge bg-secondary difficulty-badge">${getDifficultyName(question.difficulty)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 清空所有题目
+        function clearAllQuestions() {
+            selectedQuestions.clear();
+            document.getElementById('selectedQuestions').innerHTML = '<p class="text-muted text-center">请从右侧选择题目</p>';
+            document.getElementById('questionCount').textContent = '0';
+            document.getElementById('totalScore').textContent = '0';
+            
+            // 重置题型数量和占比
+            document.getElementById('choiceCount').value = '10';
+            document.getElementById('fillCount').value = '5';
+            document.getElementById('resultCount').value = '3';
+            document.getElementById('shortCount').value = '2';
+            document.getElementById('programCount').value = '1';
+            
+            document.getElementById('choicePercent').value = '20';
+            document.getElementById('fillPercent').value = '15';
+            document.getElementById('resultPercent').value = '15';
+            document.getElementById('shortPercent').value = '30';
+            document.getElementById('programPercent').value = '20';
+            
+            document.getElementById('difficultyDescription').textContent = '平衡的难度分布，简单30%、中等50%、困难20%';
+            document.getElementById('calculatedTotalScore').textContent = '100';
+            document.getElementById('totalPercentDisplay').textContent = '100';
+            
+            // 清空题目列表显示
+            document.getElementById('questionList').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">请选择筛选条件并点击搜索</h5>
+                </div>
+            `;
+            
+            // 隐藏分页控件
+            document.getElementById('paginationContainer').style.display = 'none';
+            
+            // 重置页码
+            if (document.getElementById('currentPage')) {
+                document.getElementById('currentPage').value = '1';
+            }
+            
+            // 重新计算分数
+            calculateQuestionScores();
+        }
+
+        // 更新难度描述
+        function updateDifficultyDescription() {
+            const difficultyLevel = document.querySelector('select[name="difficultyLevel"]').value;
+            let description = '';
+            if (difficultyLevel === 'easy') {
+                description = '简单 - 主要包含易、中难度题目';
+            } else if (difficultyLevel === 'medium') {
+                description = '中等 - 平衡的难度分布';
+            } else if (difficultyLevel === 'hard') {
+                description = '困难 - 包含较多高难度题目';
+            }
+            document.getElementById('difficultyDescription').textContent = description;
+        }
+
+        // 计算题目分数
+        function calculateQuestionScores() {
+            const totalScore = parseInt(document.querySelector('input[name="totalScore"]').value) || 0;
+            const choiceCount = parseInt(document.getElementById('choiceCount').value) || 0;
+            const fillCount = parseInt(document.getElementById('fillCount').value) || 0;
+            const resultCount = parseInt(document.getElementById('resultCount').value) || 0;
+            const shortCount = parseInt(document.getElementById('shortCount').value) || 0;
+            const programCount = parseInt(document.getElementById('programCount').value) || 0;
+
+            const totalQuestions = choiceCount + fillCount + resultCount + shortCount + programCount;
+
+            if (totalQuestions === 0) {
+                document.getElementById('calculatedTotalScore').textContent = '0';
+                document.getElementById('totalPercentDisplay').textContent = '0';
+                return;
+            }
+
+            const choicePercent = parseFloat(document.getElementById('choicePercent').value) || 0;
+            const fillPercent = parseFloat(document.getElementById('fillPercent').value) || 0;
+            const resultPercent = parseFloat(document.getElementById('resultPercent').value) || 0;
+            const shortPercent = parseFloat(document.getElementById('shortPercent').value) || 0;
+            const programPercent = parseFloat(document.getElementById('programPercent').value) || 0;
+
+            // 验证总占比是否超过100%
+            const totalPercent = choicePercent + fillPercent + resultPercent + shortPercent + programPercent;
+            if (totalPercent > 100) {
+                alert('警告：各题型分数占比总和不能超过100%，当前总占比：' + totalPercent + '%');
+                return;
+            }
+
+            // 计算每题分数
+            const choiceScore = choiceCount > 0 ? Math.round((totalScore * (choicePercent / 100)) / choiceCount) : 0;
+            const fillScore = fillCount > 0 ? Math.round((totalScore * (fillPercent / 100)) / fillCount) : 0;
+            const resultScore = resultCount > 0 ? Math.round((totalScore * (resultPercent / 100)) / resultCount) : 0;
+            const shortScore = shortCount > 0 ? Math.round((totalScore * (shortPercent / 100)) / shortCount) : 0;
+            const programScore = programCount > 0 ? Math.round((totalScore * (programPercent / 100)) / programCount) : 0;
+
+            // 更新每题分数显示
+            document.getElementById('choiceScore').value = choiceScore;
+            document.getElementById('fillScore').value = fillScore;
+            document.getElementById('resultScore').value = resultScore;
+            document.getElementById('shortScore').value = shortScore;
+            document.getElementById('programScore').value = programScore;
+
+            document.getElementById('calculatedTotalScore').textContent = totalScore;
+            document.getElementById('totalPercentDisplay').textContent = totalPercent.toFixed(1); // 保留一位小数
+
+            // 更新已选题目中的分数
+            Array.from(selectedQuestions.values()).forEach(question => {
+                let score = 0;
+                switch (question.questionType) {
+                    case 'C':
+                        score = choiceScore;
+                        break;
+                    case 'F':
+                        score = fillScore;
+                        break;
+                    case 'R':
+                        score = resultScore;
+                        break;
+                    case 'S':
+                        score = shortScore;
+                        break;
+                    case 'P':
+                        score = programScore;
+                        break;
+                }
+                question.score = score;
+            });
+            updateSelectedQuestions();
+        }
+
+        // 验证并计算分数
+        function validateAndCalculateScores() {
+            const choicePercent = parseFloat(document.getElementById('choicePercent').value) || 0;
+            const fillPercent = parseFloat(document.getElementById('fillPercent').value) || 0;
+            const resultPercent = parseFloat(document.getElementById('resultPercent').value) || 0;
+            const shortPercent = parseFloat(document.getElementById('shortPercent').value) || 0;
+            const programPercent = parseFloat(document.getElementById('programPercent').value) || 0;
+
+            const totalPercent = choicePercent + fillPercent + resultPercent + shortPercent + programPercent;
+
+            // 更新总占比显示
+            document.getElementById('totalPercentDisplay').textContent = totalPercent.toFixed(1);
+
+            if (totalPercent > 100) {
+                alert('警告：各题型分数占比总和不能超过100%，当前总占比：' + totalPercent + '%');
+                // 重置占比到默认值
+                document.getElementById('choicePercent').value = '20';
+                document.getElementById('fillPercent').value = '15';
+                document.getElementById('resultPercent').value = '15';
+                document.getElementById('shortPercent').value = '30';
+                document.getElementById('programPercent').value = '20';
+                document.getElementById('totalPercentDisplay').textContent = '100';
+                calculateQuestionScores(); // 重新计算分数
+            } else {
+                calculateQuestionScores(); // 计算分数
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDifficultyDescription();
+            calculateQuestionScores(); // 页面加载时也计算一次分数
+            
+            // 创建隐藏的页码字段
+            if (!document.getElementById('currentPage')) {
+                const currentPageInput = document.createElement('input');
+                currentPageInput.type = 'hidden';
+                currentPageInput.id = 'currentPage';
+                currentPageInput.value = '1';
+                document.getElementById('createPaperForm').appendChild(currentPageInput);
+            }
+            
+            // 检查URL参数，判断是否从试卷列表页面跳转过来
+            const urlParams = new URLSearchParams(window.location.search);
+            const success = urlParams.get('success');
+            const paperId = urlParams.get('paperId');
+            
+            if (success === 'true' && paperId) {
+                alert(`试卷创建成功！试卷ID: ${paperId}`);
+                // 可以选择跳转回试卷列表页面
+                // window.location.href = '/teacher/papers';
+            }
+        });
+
+        // 预览试卷
+        function previewPaper() {
+            if (selectedQuestions.size === 0) {
+                alert('请先选择题目');
+                return;
+            }
+            
+            // 构建预览数据
+            const previewData = {
+                paperName: document.querySelector('input[name="paperName"]').value || '未命名试卷',
+                subjectId: document.querySelector('select[name="subjectId"]').value || '未选择科目',
+                duration: parseInt(document.querySelector('input[name="duration"]').value) || 120,
+                difficultyLevel: document.querySelector('select[name="difficultyLevel"]').value || 'medium',
+                questions: Array.from(selectedQuestions.values()).map(question => ({
+                    id: question.id,
+                    content: question.content,
+                    questionType: question.questionType,
+                    difficulty: question.difficulty,
+                    optionA: question.optionA || '',
+                    optionB: question.optionB || '',
+                    optionC: question.optionC || '',
+                    optionD: question.optionD || '',
+                    score: question.score
+                }))
+            };
+            
+            // 计算题型分布
+            const typeCounts = {};
+            const typeScores = {};
+            previewData.questions.forEach(q => {
+                const type = q.questionType;
+                if (!typeCounts[type]) {
+                    typeCounts[type] = 0;
+                    typeScores[type] = 0;
+                }
+                typeCounts[type]++;
+                typeScores[type] += q.score;
+            });
+            
+            // 计算总分
+            const totalScore = previewData.questions.reduce((sum, q) => sum + q.score, 0);
+            
+            // 存储预览数据到sessionStorage
+            sessionStorage.setItem('paperPreviewData', JSON.stringify({
+                ...previewData,
+                typeCounts,
+                typeScores,
+                totalScore,
+                totalQuestions: previewData.questions.length
+            }));
+            
+            // 打开预览页面
+            window.open('/teacher/paper/preview-demo', '_blank');
+        }
+        
+        // 获取题目分数
+        function getQuestionScore(questionType) {
+            switch (questionType) {
+                case 'C': return 2;  // 选择题
+                case 'F': return 3;  // 填空题
+                case 'R': return 5;  // 程序运行结果题
+                case 'S': return 15; // 简答题
+                case 'P': return 20; // 编程题
+                default: return 2;
+            }
+        }
+    </script>
+</body>
+</html> 

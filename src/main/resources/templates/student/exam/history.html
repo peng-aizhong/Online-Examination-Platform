@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试历史 - 考试系统</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .exam-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 5px solid #6c757d;
+        }
+        
+        .exam-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .exam-icon {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .score-badge {
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        
+        .score-excellent {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .score-good {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .score-pass {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .score-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        
+        .status-finished {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/student">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 学生端
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${user.username}">用户名</span>
+                    (<span th:text="${#strings.equals(user.role, 'admin') ? '管理员' : #strings.equals(user.role, 'teacher') ? '教师' : #strings.equals(user.role, 'student') ? '学生' : user.role}">角色</span>)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">学生功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/student">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/student/exams">
+                                <i class="fas fa-calendar me-2"></i>考试列表
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/student/exams/history">
+                                <i class="fas fa-history me-2"></i>考试历史
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/student/resources">
+                                <i class="fas fa-book me-2"></i>学习资源
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/student/profile">
+                                <i class="fas fa-user-cog me-2"></i>个人中心
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2><i class="fas fa-history me-2"></i>考试历史</h2>
+                            <a href="/student" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>返回控制台
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 消息提示 -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${success}">操作成功</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${error}">操作失败</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- 考试历史列表 -->
+                <div class="row" th:if="${exams != null and !exams.empty}">
+                    <div class="col-12" th:each="exam : ${exams}">
+                        <div class="exam-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-1 text-center">
+                                    <i class="fas fa-file-alt exam-icon"></i>
+                                </div>
+                                <div class="col-md-5">
+                                    <h5 class="mb-2" th:text="${exam.paper != null ? exam.paper.paperName : '未知考试'}">考试名称</h5>
+                                    <p class="text-muted mb-2" th:text="${exam.paper != null and exam.paper.subject != null ? exam.paper.subject.subjectName : '未知科目'}">科目名称</p>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-success me-2 status-badge status-finished">已完成</span>
+                                        <span class="badge bg-info me-2" th:text="${exam.paper != null ? exam.paper.duration + '分钟' : '未知时长'}">120分钟</span>
+                                        <span class="badge bg-warning me-2" th:text="${exam.paper != null ? exam.paper.totalScore + '分' : '未知分数'}">100分</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-muted small">
+                                        <div><i class="fas fa-clock me-1"></i>开始时间: <span th:text="${#temporals.format(exam.startedAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 10:00</span></div>
+                                        <div><i class="fas fa-check me-1"></i>提交时间: <span th:text="${exam.submittedAt != null ? #temporals.format(exam.submittedAt, 'yyyy-MM-dd HH:mm') : '未提交'}">2024-01-01 12:00</span></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <div class="score-badge" 
+                                         th:classappend="${exam.totalScore >= 90} ? 'score-excellent' : (${exam.totalScore >= 80} ? 'score-good' : (${exam.totalScore >= 60} ? 'score-pass' : 'score-fail'))"
+                                         th:text="${exam.totalScore != null ? exam.totalScore + '分' : '未评分'}">85分</div>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <a th:href="@{/student/exam/{sessionId}/result(sessionId=${exam.sessionId})}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 空状态 -->
+                <div class="row" th:if="${exams == null or exams.empty}">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center py-5">
+                                <i class="fas fa-clipboard-list fa-4x text-muted mb-4"></i>
+                                <h4 class="text-muted">暂无考试历史</h4>
+                                <p class="text-muted">您还没有完成任何考试，快去参加考试吧！</p>
+                                <div class="mt-4">
+                                    <a href="/student/exams" class="btn btn-primary">
+                                        <i class="fas fa-calendar me-2"></i>查看可参加考试
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

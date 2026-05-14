@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑题目 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .question-form {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .question-type-options {
+            display: none;
+        }
+        
+        .question-type-options.active {
+            display: block;
+        }
+        
+        .option-item {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+        
+        .option-item:hover {
+            background: #e9ecef;
+        }
+        
+        .add-option-btn {
+            margin-top: 10px;
+        }
+        
+        .remove-option-btn {
+            float: right;
+            color: #dc3545;
+            cursor: pointer;
+        }
+        
+        .preview-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .preview-content {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-edit me-2"></i>编辑题目</h2>
+                        <p class="text-muted">修改题目信息，支持5种题型</p>
+                    </div>
+                    <div>
+                        <a href="/teacher/questions" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回题库
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- 题目表单 -->
+                <form th:action="@{/teacher/questions/{id}(id=${question.id})}" method="post" id="questionForm">
+                    <div class="question-form">
+                        <!-- 基本信息 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-info-circle me-2"></i>基本信息
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">科目 <span class="text-danger">*</span></label>
+                                        <select class="form-select" th:field="*{question.subjectId}" required>
+                                            <option value="">请选择科目</option>
+                                            <option th:each="subject : ${subjects}" 
+                                                    th:value="${subject.subjectId}" 
+                                                    th:text="${subject.subjectName}"
+                                                    th:selected="${subject.subjectId == question.subjectId}">科目名称</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">题目类型 <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="questionType" name="questionType" required>
+                                            <option value="">请选择题型</option>
+                                            <option value="C" th:selected="${question.questionType == 'C'}">选择题 (C)</option>
+                                            <option value="F" th:selected="${question.questionType == 'F'}">填空题 (F)</option>
+                                            <option value="R" th:selected="${question.questionType == 'R'}">程序运行结果题 (R)</option>
+                                            <option value="S" th:selected="${question.questionType == 'S'}">简答题 (S)</option>
+                                            <option value="P" th:selected="${question.questionType == 'P'}">编程题 (P)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">难度级别 <span class="text-danger">*</span></label>
+                                        <select class="form-select" th:field="*{question.difficulty}" required>
+                                            <option value="">请选择难度</option>
+                                            <option value="easy" th:selected="${question.difficulty == 'easy'}">简单</option>
+                                            <option value="medium" th:selected="${question.difficulty == 'medium'}">中等</option>
+                                            <option value="hard" th:selected="${question.difficulty == 'hard'}">困难</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">知识点标签</label>
+                                        <input type="text" class="form-control" th:field="*{question.knowledgeTag}" 
+                                               placeholder="输入知识点标签，多个标签用逗号分隔">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 题目内容 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-edit me-2"></i>题目内容
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">题目内容 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" th:field="*{question.content}" rows="6" 
+                                          placeholder="请输入题目内容..." required></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- 选择题选项输入 -->
+                        <div class="form-section question-type-options" id="choiceOptions" style="display: none;">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-list me-2"></i>选择题选项
+                            </h5>
+                            <div id="optionsContainer">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOption()">
+                                    <i class="fas fa-plus me-1"></i>添加选项
+                                </button>
+                            </div>
+                            <!-- 隐藏字段用于存储选项JSON -->
+                            <input type="hidden" name="options" id="optionsJson">
+                        </div>
+                        
+                        <!-- 答案设置 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-check-circle me-2"></i>答案设置
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">标准答案 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" th:field="*{question.answer}" rows="4" 
+                                          placeholder="请输入标准答案..." required></textarea>
+                                <div class="form-text">
+                                    <span id="answerHint">选择题请输入选项字母（如：A、B、C、D）</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 状态设置 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-toggle-on me-2"></i>状态设置
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">题目状态</label>
+                                <select class="form-select" th:field="*{question.status}">
+                                    <option value="启用" th:selected="${question.status == '启用'}">启用</option>
+                                    <option value="禁用" th:selected="${question.status == '禁用'}">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作按钮 -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-info" onclick="previewQuestion()">
+                                <i class="fas fa-eye me-2"></i>预览题目
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-2"></i>重置
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>保存修改
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- 预览面板 -->
+                <div class="preview-panel">
+                    <h5><i class="fas fa-eye me-2"></i>题目预览</h5>
+                    <div class="preview-content" id="previewContent">
+                        <p class="text-muted">选择题目类型后，这里将显示题目预览</p>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:inline="javascript">
+        // 获取题目数据
+        const questionData = /*[[${question}]]*/ {};
+        const questionType = questionData.questionType || '';
+        const optionA = questionData.optionA || '';
+        const optionB = questionData.optionB || '';
+        const optionC = questionData.optionC || '';
+        const optionD = questionData.optionD || '';
+        
+        // 页面加载完成后初始化
+        $(document).ready(function() {
+            if (questionType) {
+                updateFormByQuestionType(questionType);
+                if (questionType === 'C') {
+                    // 从数据库的独立选项字段加载选项
+                    loadOptionsFromDatabase();
+                }
+                updatePreview();
+            }
+        });
+        
+        // 题目类型变化处理
+        $('#questionType').on('change', function() {
+            const questionType = $(this).val();
+            updateFormByQuestionType(questionType);
+            updatePreview();
+        });
+        
+        // 根据题目类型更新表单
+        function updateFormByQuestionType(questionType) {
+            // 隐藏所有选项
+            $('.question-type-options').removeClass('active');
+            
+            // 显示对应选项
+            switch(questionType) {
+                case 'C':
+                    $('#choiceOptions').addClass('active');
+                    $('#answerHint').text('选择题请输入正确答案（如：A、B、C、D）');
+                    break;
+                case 'F':
+                    $('#answerHint').text('填空题请输入标准答案，多个答案用分号分隔');
+                    break;
+                case 'R':
+                    $('#answerHint').text('程序运行结果题请输入程序运行结果');
+                    break;
+                case 'S':
+                    $('#answerHint').text('简答题请输入参考答案要点');
+                    break;
+                case 'P':
+                    $('#answerHint').text('编程题请输入代码或解题思路');
+                    break;
+                default:
+                    $('#answerHint').text('请选择题目类型');
+            }
+        }
+        
+        // 加载选项数据
+        function loadOptions(optionsStr) {
+            if (!optionsStr) return;
+            
+            try {
+                const optionsArray = JSON.parse(optionsStr);
+                $('#optionsContainer').empty();
+                
+                optionsArray.forEach((option, index) => {
+                    const optionLetter = String.fromCharCode(65 + index);
+                    // 如果选项已经包含字母前缀，则提取纯内容；否则直接使用
+                    let optionContent = option;
+                    if (option.match(/^[A-Z]\.\s*/)) {
+                        optionContent = option.replace(/^[A-Z]\.\s*/, '');
+                    }
+                    
+                    const optionHtml = `
+                        <div class="option-item">
+                            <div class="row">
+                                <div class="col-md-1">
+                                    <span class="badge bg-primary">${optionLetter}</span>
+                                </div>
+                                <div class="col-md-10">
+                                    <input type="text" class="form-control" name="options" 
+                                           value="${optionContent}" placeholder="选项${optionLetter}内容" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <i class="fas fa-times remove-option-btn" onclick="removeOption(this)"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#optionsContainer').append(optionHtml);
+                });
+            } catch (e) {
+                console.error('解析选项数据失败:', e);
+            }
+        }
+        
+        // 从数据库的独立选项字段加载选项
+        function loadOptionsFromDatabase() {
+            const options = [];
+            if (optionA && optionA !== 'null' && optionA.trim() !== '') options.push(optionA);
+            if (optionB && optionB !== 'null' && optionB.trim() !== '') options.push(optionB);
+            if (optionC && optionC !== 'null' && optionC.trim() !== '') options.push(optionC);
+            if (optionD && optionD !== 'null' && optionD.trim() !== '') options.push(optionD);
+            
+            // 清空选项容器
+            $('#optionsContainer').empty();
+            
+            if (options.length > 0) {
+                // 加载现有选项
+                options.forEach((option, index) => {
+                    const optionLetter = String.fromCharCode(65 + index);
+                    const optionHtml = `
+                        <div class="option-item">
+                            <div class="row">
+                                <div class="col-md-1">
+                                    <span class="badge bg-primary">${optionLetter}</span>
+                                </div>
+                                <div class="col-md-10">
+                                    <input type="text" class="form-control" name="options" 
+                                           value="${option}" placeholder="选项${optionLetter}内容" required
+                                           onchange="updatePreview()" oninput="updatePreview()">
+                                </div>
+                                <div class="col-md-1">
+                                    <i class="fas fa-times remove-option-btn" onclick="removeOption(this)"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#optionsContainer').append(optionHtml);
+                });
+            } else {
+                // 如果没有现有选项，添加默认的4个选项输入框
+                for (let i = 0; i < 4; i++) {
+                    const optionLetter = String.fromCharCode(65 + i);
+                    const optionHtml = `
+                        <div class="option-item">
+                            <div class="row">
+                                <div class="col-md-1">
+                                    <span class="badge bg-primary">${optionLetter}</span>
+                                </div>
+                                <div class="col-md-10">
+                                    <input type="text" class="form-control" name="options" 
+                                           value="" placeholder="选项${optionLetter}内容" required
+                                           onchange="updatePreview()" oninput="updatePreview()">
+                                </div>
+                                <div class="col-md-1">
+                                    <i class="fas fa-times remove-option-btn" onclick="removeOption(this)"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#optionsContainer').append(optionHtml);
+                }
+            }
+        }
+        
+        // 从题目内容中解析选项
+        function parseOptionsFromContent(content) {
+            const options = [];
+            const lines = content.split('\n');
+            
+            for (let line of lines) {
+                line = line.trim();
+                // 匹配 A. 选项内容 格式
+                const match = line.match(/^([A-Z])\.\s*(.+)$/);
+                if (match) {
+                    options.push(match[2]); // 只保存选项内容，不包含字母
+                }
+            }
+            
+            return options;
+        }
+        
+        // 获取完整的题目内容（包括选项），用于预览显示
+        function getFullQuestionContent(content) {
+            // 在编辑模式下，我们需要从选项输入字段重新构建完整的题目内容
+            if (questionType === 'C') {
+                const options = [];
+                $('#optionsContainer input[name="options"]').each(function() {
+                    const optionValue = $(this).val().trim();
+                    if (optionValue) {
+                        options.push(optionValue);
+                    }
+                });
+                
+                if (options.length > 0) {
+                    let fullContent = content;
+                    
+                    // 构建选项文本
+                    const optionsText = options.map((option, index) => 
+                        `${String.fromCharCode(65 + index)}. ${option}`
+                    ).join('\n');
+                    
+                    // 如果题目内容末尾没有换行，添加一个
+                    if (!fullContent.endsWith('\n')) {
+                        fullContent += '\n';
+                    }
+                    fullContent += optionsText;
+                    
+                    return fullContent;
+                }
+            }
+            
+            // 如果不是选择题或没有选项数据，返回原始内容
+            return content;
+        }
+        
+        // 将选项数组转换为空格分隔的字符串
+        function optionsToString(options) {
+            return options.join(' ');
+        }
+        
+        // 预览题目
+        function previewQuestion() {
+            const questionType = $('#questionType').val();
+            const content = $('textarea[name="content"]').val();
+            const answer = $('textarea[name="answer"]').val();
+            
+            if (!questionType || !content || !answer) {
+                alert('请填写完整的题目信息');
+                return;
+            }
+            
+            let previewHtml = `
+                <div class="mb-3">
+                    <strong>题目类型:</strong> ${getQuestionTypeName(questionType)}
+                </div>
+            `;
+            
+            if (questionType === 'C') {
+                // 对于选择题，显示完整的题目内容（包括选项），按从上到下的方式排列
+                const fullContent = getFullQuestionContent(content);
+                previewHtml += `
+                    <div class="mb-3">
+                        <strong>题目内容:</strong><br>
+                        <div class="border rounded p-3 bg-light">
+                            <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${fullContent}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 对于非选择题，直接显示题目内容
+                previewHtml += `
+                    <div class="mb-3">
+                        <strong>题目内容:</strong><br>
+                        <div class="border rounded p-3 bg-light">
+                            <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${content}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewHtml += `
+                <div class="mb-3">
+                    <strong>标准答案:</strong><br>
+                    <div class="border rounded p-3 bg-light">
+                        <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${answer}</pre>
+                    </div>
+                </div>
+            `;
+            
+            $('#previewContent').html(previewHtml);
+        }
+        
+        // 获取题目类型名称
+        function getQuestionTypeName(type) {
+            const typeNames = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return typeNames[type] || type;
+        }
+        
+        // 重置表单
+        function resetForm() {
+            if (confirm('确定要重置表单吗？所有修改的内容将丢失。')) {
+                location.reload();
+            }
+        }
+        
+        // 表单提交验证
+        $('#questionForm').on('submit', function(e) {
+            const questionType = $('#questionType').val();
+            const content = $('textarea[name="content"]').val();
+            const answer = $('textarea[name="answer"]').val();
+            const subjectId = $('select[name="subjectId"]').val();
+            const difficulty = $('select[name="difficulty"]').val();
+            
+            console.log('表单提交验证开始', {questionType, content, answer, subjectId, difficulty});
+            
+            if (!subjectId) {
+                alert('请选择科目');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!questionType) {
+                alert('请选择题目类型');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!difficulty) {
+                alert('请选择难度级别');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!content.trim()) {
+                alert('请填写题目内容');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!answer.trim()) {
+                alert('请填写标准答案');
+                e.preventDefault();
+                return false;
+            }
+            
+            // 选择题特殊验证和选项处理
+            if (questionType === 'C') {
+                // 从选项输入字段收集选项
+                const options = [];
+                $('#optionsContainer input[name="options"]').each(function() {
+                    const optionValue = $(this).val().trim();
+                    if (optionValue) {
+                        options.push(optionValue);
+                    }
+                });
+                
+                console.log('选择题选项收集:', options);
+                
+                if (options.length < 2) {
+                    alert('选择题至少需要2个选项，请添加选项');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 将选项转换为JSON格式并存储到隐藏字段
+                $('#optionsJson').val(JSON.stringify(options));
+                console.log('选项JSON:', JSON.stringify(options));
+            } else {
+                // 非选择题清空选项字段
+                $('#optionsJson').val('');
+            }
+            
+            console.log('表单验证通过，准备提交');
+            return true;
+        });
+        
+        // 添加选项
+        function addOption() {
+            const optionCount = $('#optionsContainer .option-item').length;
+            if (optionCount >= 4) {
+                alert('选择题最多只能有4个选项');
+                return;
+            }
+            
+            const optionLetter = String.fromCharCode(65 + optionCount);
+            const optionHtml = `
+                <div class="option-item">
+                    <div class="row">
+                        <div class="col-md-1">
+                            <span class="badge bg-primary">${optionLetter}</span>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text" class="form-control" name="options" 
+                                   placeholder="选项${optionLetter}内容" required
+                                   onchange="updatePreview()" oninput="updatePreview()">
+                        </div>
+                        <div class="col-md-1">
+                            <i class="fas fa-times remove-option-btn" onclick="removeOption(this)"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#optionsContainer').append(optionHtml);
+            updatePreview();
+        }
+        
+        // 删除选项
+        function removeOption(element) {
+            $(element).closest('.option-item').remove();
+            updateOptionLabels();
+            updatePreview();
+        }
+        
+        // 更新选项标签
+        function updateOptionLabels() {
+            $('#optionsContainer .option-item').each(function(index) {
+                const optionLetter = String.fromCharCode(65 + index);
+                $(this).find('.badge').text(optionLetter);
+                $(this).find('input').attr('placeholder', `选项${optionLetter}内容`);
+            });
+        }
+        
+        // 实时预览更新
+        $('textarea[name="content"], textarea[name="answer"]').on('input', function() {
+            updatePreview();
+        });
+        
+        // 选项输入变化时更新预览
+        $(document).on('input', '#optionsContainer input[name="options"]', function() {
+            updatePreview();
+        });
+        
+        function updatePreview() {
+            const questionType = $('#questionType').val();
+            if (questionType) {
+                previewQuestion();
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 考试系统</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            padding: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: #f8f9fa;
+            color: #333 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+            background: #f8f9fa;
+            min-height: calc(100vh - 56px);
+        }
+        
+        .profile-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .avatar-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section h5 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .form-control {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-group {
+            margin-top: 15px;
+        }
+        
+        hr {
+            margin: 30px 0;
+            border-color: #dee2e6;
+        }
+        
+        .alert {
+            margin-bottom: 20px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .profile-section {
+                padding: 20px;
+            }
+            
+            .sidebar {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/teacher">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 教师面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${user != null ? user.username : '未知用户'}">用户名</span>
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 消息提示 -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert" style="margin: 20px;">
+        <i class="fas fa-check-circle me-2"></i>
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert" style="margin: 20px;">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 左侧功能侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">教师功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/questions">
+                                <i class="fas fa-question-circle me-2"></i>题目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/papers">
+                                <i class="fas fa-file-alt me-2"></i>试卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/exams">
+                                <i class="fas fa-list me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/grading">
+                                <i class="fas fa-chart-bar me-2"></i>成绩管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/resources">
+                                <i class="fas fa-book me-2"></i>学习资源
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/teacher/profile">
+                                <i class="fas fa-user-circle me-2"></i>个人中心
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 头像上传区域 -->
+                <div class="profile-section">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user-circle me-2"></i>个人中心
+                    </h4>
+                    
+                    <div class="avatar-section" th:if="${user != null}">
+                        <!-- 头像显示 -->
+                        <img th:if="${user.avatar}" th:src="${user.avatar}" 
+                             alt="头像" class="avatar-preview" id="avatarPreview"
+                             onerror="handleAvatarError(this, '${user.avatar}')">
+                        <img th:unless="${user.avatar}" src="https://via.placeholder.com/120x120/007bff/ffffff?text=头像" 
+                             alt="默认头像" class="avatar-preview" id="avatarPreview">
+                        
+                        <!-- 头像上传表单 -->
+                        <form th:action="@{/teacher/profile/upload-avatar}" method="post" enctype="multipart/form-data">
+                            <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('avatarInput').click()">
+                                    <i class="fas fa-upload me-1"></i>更换头像
+                                </button>
+                                <button type="submit" class="btn btn-success btn-sm" id="uploadBtn" style="display: none;">
+                                    <i class="fas fa-save me-1"></i>保存
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- 头像恢复选项 -->
+                        <div th:if="${user.avatar}" class="mt-3">
+                            <button type="button" class="btn btn-outline-warning btn-sm me-2" onclick="resetAvatar()">
+                                <i class="fas fa-undo me-1"></i>重置头像
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="recoverAvatar()">
+                                <i class="fas fa-sync me-1"></i>恢复头像
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 个人资料编辑 -->
+                <div class="profile-section">
+                    <div class="form-section">
+                        <h5><i class="fas fa-user me-2"></i>编辑个人资料</h5>
+                        <div th:if="${user == null}" class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            用户信息加载失败，请重新登录。
+                        </div>
+                        
+                        <form th:action="@{/teacher/profile/update}" method="post" th:if="${user != null}">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">用户名</label>
+                                    <input type="text" class="form-control" id="username" name="username" th:value="${user.username}" placeholder="请输入用户名" required>
+                                    <div class="form-text">用户名用于登录，请谨慎修改</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="userId" class="form-label">用户ID</label>
+                                    <input type="text" class="form-control" id="userId" th:value="${user.userId}" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="department" class="form-label">部门/专业</label>
+                                    <input type="text" class="form-control" id="department" name="department" th:value="${user.department}" placeholder="请输入部门或专业">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">邮箱</label>
+                                    <input type="email" class="form-control" id="email" name="email" th:value="${user.email}" placeholder="请输入邮箱地址">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">手机号</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" th:value="${user.phone}" placeholder="请输入手机号">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="role" class="form-label">角色</label>
+                                    <input type="text" class="form-control" id="role" th:value="${#strings.equals(user.role, 'admin') ? '管理员' : #strings.equals(user.role, 'teacher') ? '教师' : #strings.equals(user.role, 'student') ? '学生' : user.role}" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>保存修改
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 修改密码 -->
+                <div class="profile-section">
+                    <div class="form-section">
+                        <h5><i class="fas fa-lock me-2"></i>修改密码</h5>
+                        <form th:action="@{/teacher/profile/change-password}" method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="currentPassword" class="form-label">当前密码</label>
+                                    <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPassword" class="form-label">新密码</label>
+                                    <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                                    <div class="form-text">密码长度至少6个字符</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">确认新密码</label>
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-key me-2"></i>修改密码
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 头像预览功能
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var reader = new FileReader();
+                
+                // 显示上传按钮
+                document.getElementById('uploadBtn').style.display = 'inline-block';
+                
+                reader.onload = function(e) {
+                    var avatarPreview = document.getElementById('avatarPreview');
+                    avatarPreview.src = e.target.result;
+                    
+                    // 显示文件信息
+                    showFileInfo(file);
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // 显示文件信息
+        function showFileInfo(file) {
+            // 移除之前的文件信息
+            var existingInfo = document.querySelector('.file-info');
+            if (existingInfo) {
+                existingInfo.remove();
+            }
+            
+            // 创建新的文件信息
+            var fileInfo = document.createElement('div');
+            fileInfo.className = 'alert alert-info file-info mt-2';
+            fileInfo.innerHTML = '<i class="fas fa-info-circle me-2"></i>已选择文件: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+            
+            var avatarSection = document.querySelector('.avatar-section');
+            avatarSection.appendChild(fileInfo);
+        }
+        
+        // 头像错误处理
+        function handleAvatarError(img, avatarPath) {
+            if (avatarPath && avatarPath.startsWith('/teacher/')) {
+                // 尝试修复路径
+                var fixedPath = '/uploads/avatars/' + avatarPath.substring(9);
+                img.src = fixedPath;
+                img.onerror = function() {
+                    // 如果修复失败，显示默认头像
+                    img.src = 'https://via.placeholder.com/120x120/007bff/ffffff?text=头像';
+                    showMessage('头像文件丢失，请重新上传', 'warning');
+                };
+            } else {
+                // 直接显示默认头像
+                img.src = 'https://via.placeholder.com/120x120/007bff/ffffff?text=头像';
+            }
+        }
+        
+        // 重置头像
+        function resetAvatar() {
+            if (confirm('确定要重置头像吗？这将清除当前的头像设置。')) {
+                window.location.href = '/teacher/profile/reset-avatar';
+            }
+        }
+        
+        // 恢复头像
+        function recoverAvatar() {
+            if (confirm('确定要尝试恢复头像吗？')) {
+                window.location.href = '/teacher/profile/recover-avatar';
+            }
+        }
+        
+        // 显示消息
+        function showMessage(message, type) {
+            var alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
+            alertDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i>' + message + 
+                               '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            
+            var mainContent = document.querySelector('.main-content');
+            mainContent.insertBefore(alertDiv, mainContent.firstChild);
+            
+            // 自动隐藏
+            setTimeout(function() {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+        
+        // 页面加载完成后预加载头像
+        document.addEventListener('DOMContentLoaded', function() {
+            var avatarPreview = document.getElementById('avatarPreview');
+            if (avatarPreview && avatarPreview.src) {
+                var img = new Image();
+                img.onload = function() {
+                    // 头像加载成功
+                };
+                img.onerror = function() {
+                    // 头像加载失败，使用默认头像
+                    avatarPreview.src = 'https://via.placeholder.com/120x120/007bff/ffffff?text=头像';
+                };
+                img.src = avatarPreview.src;
+            }
+        });
+        
+        // 自动隐藏提示信息
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert:not(.file-info)');
+            alerts.forEach(function(alert) {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html> 

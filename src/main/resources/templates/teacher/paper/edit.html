@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑试卷 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .edit-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .question-selection {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .selected-questions {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #e3f2fd;
+        }
+        
+        .question-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .question-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .question-item.selected {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .question-type-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        
+        .difficulty-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- 顶部操作栏 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-edit me-2"></i>编辑试卷</h2>
+                        <p class="text-muted">修改试卷信息和题目组成</p>
+                    </div>
+                    <div>
+                        <a th:href="@{/teacher/papers/{id}(id=${paper.paperId})}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" th:action="@{/teacher/papers/{id}(id=${paper.paperId})}">
+            <div class="row">
+                <div class="col-12">
+                    <div class="edit-card">
+                        <!-- 试卷基本信息 -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-info-circle me-2"></i>试卷基本信息
+                        </h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">试卷名称</label>
+                                <input type="text" name="paperName" class="form-control" 
+                                       th:value="${paper.paperName}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">科目</label>
+                                <select name="subjectId" class="form-select" required>
+                                    <option value="">请选择科目</option>
+                                    <option th:each="subject : ${subjects}" 
+                                            th:value="${subject.subjectId}" 
+                                            th:text="${subject.subjectName}"
+                                            th:selected="${subject.subjectId == paper.subjectId}">
+                                        科目名称
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">考试时长（分钟）</label>
+                                <input type="number" name="duration" class="form-control" 
+                                       th:value="${paper.duration}" min="30" max="300" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">难度等级</label>
+                                <select name="difficultyLevel" class="form-select" required>
+                                    <option value="easy" th:selected="${paper.difficultyLevel == 'easy'}">简单</option>
+                                    <option value="medium" th:selected="${paper.difficultyLevel == 'medium'}">中等</option>
+                                    <option value="hard" th:selected="${paper.difficultyLevel == 'hard'}">困难</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">总分</label>
+                                <input type="number" name="totalScore" class="form-control" 
+                                       th:value="${paper.totalScore}" min="1" max="200" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="edit-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-list me-2"></i>题目选择
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="searchKeyword" class="form-control" placeholder="搜索题目...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchQuestions()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="question-selection">
+                            <div th:if="${#lists.isEmpty(availableQuestions)}" class="text-center py-3">
+                                <i class="fas fa-question-circle fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">暂无可用题目</p>
+                            </div>
+                            
+                            <div th:each="question : ${availableQuestions}" class="question-item" 
+                                 th:data-question-id="${question.id}" onclick="toggleQuestion(this.getAttribute('data-question-id'))"
+                                 th:class="${currentQuestions.contains(question) ? 'selected' : ''}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="mb-2">
+                                            <span class="badge bg-primary question-type-badge me-2" 
+                                                  th:text="${question.questionTypeDisplayName}">
+                                                选择题
+                                            </span>
+                                            <span class="badge bg-warning difficulty-badge" 
+                                                  th:text="${question.difficulty == 'easy' ? '简单' : 
+                                                            question.difficulty == 'medium' ? '中等' : 
+                                                            question.difficulty == 'hard' ? '困难' : '未知'}">
+                                                中等
+                                            </span>
+                                        </div>
+                                        <p class="mb-1" th:text="${#strings.abbreviate(question.content, 100)}">题目内容</p>
+                                        <!-- 选择题选项显示 -->
+                                        <div th:if="${question.questionType == 'C'}" class="mt-2">
+                                            <div class="question-options" style="font-size: 0.85em; color: #666;">
+                                                <div th:if="${question.optionA != null and !#strings.isEmpty(question.optionA)}" class="mb-1">
+                                                    <strong>A.</strong> <span th:text="${#strings.abbreviate(question.optionA, 50)}">选项A</span>
+                                                </div>
+                                                <div th:if="${question.optionB != null and !#strings.isEmpty(question.optionB)}" class="mb-1">
+                                                    <strong>B.</strong> <span th:text="${#strings.abbreviate(question.optionB, 50)}">选项B</span>
+                                                </div>
+                                                <div th:if="${question.optionC != null and !#strings.isEmpty(question.optionC)}" class="mb-1">
+                                                    <strong>C.</strong> <span th:text="${#strings.abbreviate(question.optionC, 50)}">选项C</span>
+                                                </div>
+                                                <div th:if="${question.optionD != null and !#strings.isEmpty(question.optionD)}" class="mb-1">
+                                                    <strong>D.</strong> <span th:text="${#strings.abbreviate(question.optionD, 50)}">选项D</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" th:text="${question.knowledgeTag}">知识点</small>
+                                    </div>
+                                    <div class="form-check ms-2">
+                                        <input class="form-check-input" type="checkbox" 
+                                               th:name="questionIds" th:value="${question.id}"
+                                               th:checked="${currentQuestions.contains(question)}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="edit-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-check-circle me-2"></i>已选题目
+                        </h5>
+                        
+                        <div class="selected-questions">
+                            <div th:if="${#lists.isEmpty(currentQuestions)}" class="text-center py-3">
+                                <i class="fas fa-list fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">暂未选择题目</p>
+                            </div>
+                            
+                            <div th:each="question, iterStat : ${currentQuestions}" class="question-item" th:id="'question-' + ${question.id}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="mb-2">
+                                            <span class="badge bg-success me-2" th:text="${iterStat.count}">1</span>
+                                            <span class="badge bg-primary question-type-badge me-2" 
+                                                  th:text="${question.questionTypeDisplayName}">
+                                                选择题
+                                            </span>
+                                            <span class="badge bg-warning difficulty-badge" 
+                                                  th:text="${question.difficulty == 'easy' ? '简单' : 
+                                                            question.difficulty == 'medium' ? '中等' : 
+                                                            question.difficulty == 'hard' ? '困难' : '未知'}">
+                                                中等
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- 题目内容编辑 -->
+                                        <div class="mb-2">
+                                            <label class="form-label fw-bold">题目内容:</label>
+                                            <textarea class="form-control question-content-edit" 
+                                                      th:data-question-id="${question.id}"
+                                                      rows="3">[[${question.content}]]</textarea>
+                                        </div>
+                                        
+                                        <!-- 选择题选项编辑 -->
+                                        <div th:if="${question.questionType == 'C'}" class="mb-2">
+                                            <label class="form-label fw-bold">选项:</label>
+                                            <div class="options-edit-container">
+                                                <!-- 选项A -->
+                                                <div th:if="${question.optionA != null and !#strings.isEmpty(question.optionA)}" class="option-edit-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="option-label me-2 fw-bold">A.</span>
+                                                        <input type="text" class="form-control option-input" 
+                                                               th:data-question-id="${question.id}"
+                                                               th:data-option-index="0"
+                                                               th:value="${question.optionA}">
+                                                    </div>
+                                                </div>
+                                                <!-- 选项B -->
+                                                <div th:if="${question.optionB != null and !#strings.isEmpty(question.optionB)}" class="option-edit-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="option-label me-2 fw-bold">B.</span>
+                                                        <input type="text" class="form-control option-input" 
+                                                               th:data-question-id="${question.id}"
+                                                               th:data-option-index="1"
+                                                               th:value="${question.optionB}">
+                                                    </div>
+                                                </div>
+                                                <!-- 选项C -->
+                                                <div th:if="${question.optionC != null and !#strings.isEmpty(question.optionC)}" class="option-edit-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="option-label me-2 fw-bold">C.</span>
+                                                        <input type="text" class="form-control option-input" 
+                                                               th:data-question-id="${question.id}"
+                                                               th:data-option-index="2"
+                                                               th:value="${question.optionC}">
+                                                    </div>
+                                                </div>
+                                                <!-- 选项D -->
+                                                <div th:if="${question.optionD != null and !#strings.isEmpty(question.optionD)}" class="option-edit-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="option-label me-2 fw-bold">D.</span>
+                                                        <input type="text" class="form-control option-input" 
+                                                               th:data-question-id="${question.id}"
+                                                               th:data-option-index="3"
+                                                               th:value="${question.optionD}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 答案编辑 -->
+                                        <div class="mb-2">
+                                            <label class="form-label fw-bold">参考答案:</label>
+                                            <textarea class="form-control question-answer-edit" 
+                                                      th:data-question-id="${question.id}"
+                                                      rows="2">[[${question.answer}]]</textarea>
+                                        </div>
+                                        
+                                        <small class="text-muted" th:text="${question.knowledgeTag}">知识点</small>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                th:data-question-id="${question.id}" onclick="saveQuestionEdit(this.getAttribute('data-question-id'))">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            th:data-question-id="${question.id}" onclick="removeQuestion(this.getAttribute('data-question-id'))">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                已选择 <span id="selectedCount" th:text="${currentQuestions.size()}">0</span> 道题目
+                            </p>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-star me-1"></i>
+                                预计总分: <span id="estimatedScore" th:text="${paper.totalScore}">100</span> 分
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="edit-card">
+                        <div class="text-end">
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="history.back()">
+                                <i class="fas fa-times me-1"></i>取消
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>保存修改
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        .question-content-edit, .question-answer-edit {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .option-input {
+            font-size: 14px;
+        }
+        
+        .question-item {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        
+        .question-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-outline-primary:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline-danger:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 切换题目选择
+        function toggleQuestion(questionId) {
+            const checkbox = document.querySelector(`input[value="${questionId}"]`);
+            checkbox.checked = !checkbox.checked;
+            updateQuestionSelection(questionId, checkbox.checked);
+        }
+
+        // 更新题目选择状态
+        function updateQuestionSelection(questionId, selected) {
+            const questionItem = document.querySelector(`[onclick="toggleQuestion('${questionId}')"]`);
+            if (selected) {
+                questionItem.classList.add('selected');
+                addQuestionToSelectedList(questionId);
+            } else {
+                questionItem.classList.remove('selected');
+                removeQuestionFromSelectedList(questionId);
+            }
+            updateSelectedCount();
+        }
+
+        // 添加题目到已选列表
+        function addQuestionToSelectedList(questionId) {
+            // 通过AJAX获取题目详情并添加到已选列表
+            fetch(`/teacher/questions/${questionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.question) {
+                        const question = data.question;
+                        const selectedQuestionsContainer = document.getElementById('selectedQuestions');
+                        const questionElement = createQuestionElement(question);
+                        selectedQuestionsContainer.appendChild(questionElement);
+                        updateQuestionSelection();
+                        updateSelectedCount();
+                        renumberQuestions();
+                    } else {
+                        showMessage('获取题目详情失败: ' + (data.message || '未知错误'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取题目详情失败:', error);
+                    showMessage('获取题目详情失败', 'error');
+                });
+        }
+
+        // 从已选列表移除题目
+        function removeQuestionFromSelectedList(questionId) {
+            const questionElement = document.querySelector(`#question-${questionId}`);
+            if (questionElement) {
+                questionElement.remove();
+                // 重新编号剩余的题目
+                renumberQuestions();
+            }
+        }
+        
+        // 重新编号题目
+        function renumberQuestions() {
+            const questionItems = document.querySelectorAll('#selectedQuestions .question-item');
+            questionItems.forEach((item, index) => {
+                const badge = item.querySelector('.badge.bg-success');
+                if (badge) {
+                    badge.textContent = index + 1;
+                }
+            });
+        }
+
+        // 创建题目元素
+        function createQuestionElement(question) {
+            const div = document.createElement('div');
+            div.className = 'question-item';
+            div.setAttribute('data-question-id', question.id);
+            
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="mb-2">
+                            <span class="badge bg-success me-2">${document.querySelectorAll('#selectedQuestions .question-item').length + 1}</span>
+                            <span class="badge bg-primary question-type-badge me-2">${getQuestionTypeDisplayName(question.questionType)}</span>
+                            <span class="badge bg-warning difficulty-badge">${getDifficultyDisplayName(question.difficulty)}</span>
+                        </div>
+                        <p class="mb-1">${question.content.length > 100 ? question.content.substring(0, 100) + '...' : question.content}</p>
+                        <small class="text-muted">${question.knowledgeTag || ''}</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            data-question-id="${question.id}" onclick="removeQuestion('${question.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        // 获取题目类型显示名称
+        function getQuestionTypeDisplayName(questionType) {
+            const typeMap = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return typeMap[questionType] || '未知类型';
+        }
+
+        // 获取难度显示名称
+        function getDifficultyDisplayName(difficulty) {
+            const difficultyMap = {
+                'easy': '简单',
+                'medium': '中等',
+                'hard': '困难'
+            };
+            return difficultyMap[difficulty] || '未知';
+        }
+
+        // 移除题目
+        function removeQuestion(questionId) {
+            // 显示确认对话框
+            if (confirm('确定要删除这道题目吗？此操作不可撤销。')) {
+            const checkbox = document.querySelector(`input[value="${questionId}"]`);
+                if (checkbox) {
+            checkbox.checked = false;
+                }
+            updateQuestionSelection(questionId, false);
+                showMessage('题目已删除', 'success');
+            }
+        }
+
+        // 更新已选题目数量
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('input[name="questionIds"]:checked');
+            const selectedCount = checkboxes.length;
+            document.getElementById('selectedCount').textContent = selectedCount;
+            
+            // 更新预计总分
+            let totalScore = 0;
+            checkboxes.forEach(checkbox => {
+                const questionType = checkbox.getAttribute('data-question-type');
+                totalScore += getQuestionScore(questionType);
+            });
+            document.getElementById('estimatedScore').textContent = totalScore;
+        }
+
+        // 获取题目分值
+        function getQuestionScore(questionType) {
+            const scoreMap = {
+                'C': 2,   // 选择题
+                'F': 3,   // 填空题
+                'R': 5,   // 程序运行结果题
+                'S': 8,   // 简答题
+                'P': 15   // 编程题
+            };
+            return scoreMap[questionType] || 5;
+        }
+
+        // 保存题目编辑
+        function saveQuestionEdit(questionId) {
+            const content = document.querySelector(`textarea[data-question-id="${questionId}"].question-content-edit`).value;
+            const answer = document.querySelector(`textarea[data-question-id="${questionId}"].question-answer-edit`).value;
+            
+            // 收集选择题选项
+            const optionInputs = document.querySelectorAll(`input[data-question-id="${questionId}"].option-input`);
+            const options = Array.from(optionInputs).map(input => input.value).join('|');
+            
+            const questionData = {
+                id: questionId,
+                content: content,
+                answer: answer,
+                options: options
+            };
+            
+            // 发送AJAX请求保存题目
+            fetch('/teacher/questions/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(questionData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showMessage('题目保存成功', 'success');
+                } else {
+                    showMessage('题目保存失败: ' + result.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('保存题目失败:', error);
+                showMessage('保存失败，请重试', 'error');
+            });
+        }
+
+        // 显示消息提示
+        function showMessage(message, type) {
+            // 移除现有的提示消息
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+                    <i class="${iconClass} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // 在页面右上角显示消息
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                const alert = document.querySelector('.alert.position-fixed');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 3000);
+        }
+
+        // 搜索题目
+        function searchQuestions() {
+            const keyword = document.getElementById('searchKeyword').value;
+            // 这里可以实现题目搜索逻辑
+            console.log('搜索关键词:', keyword);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSelectedCount();
+        });
+    </script>
+</body>
+</html> 

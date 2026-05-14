@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试卷详情 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .question-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
+        
+        .question-number {
+            background: #007bff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .question-type-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        
+        .difficulty-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre;
+            word-break: normal;
+            border-radius: 4px;
+            overflow-x: auto;
+            tab-size: 4;
+        }
+        
+        .choice-options {
+            margin: 15px 0;
+        }
+        
+        .choice-option {
+            margin: 8px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- 顶部操作栏 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-file-alt me-2"></i>试卷详情</h2>
+                        <p class="text-muted">查看试卷的详细信息和题目内容</p>
+                    </div>
+                    <div class="btn-group">
+                        <a th:href="@{/teacher/papers/{id}/edit(id=${paper.paperId})}" class="btn btn-outline-warning">
+                            <i class="fas fa-edit me-2"></i>编辑试卷
+                        </a>
+                        <a href="/teacher/papers" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 试卷基本信息 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="detail-card">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4 th:text="${paper.paperName}">试卷名称</h4>
+                            <p class="text-muted mb-3" th:text="${paper.subject.subjectName}">科目名称</p>
+                            <div class="d-flex flex-wrap gap-3">
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-clock me-1"></i>
+                                    时长: <span th:text="${paper.duration}">120</span>分钟
+                                </span>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-star me-1"></i>
+                                    总分: <span th:text="${paper.totalScore}">100</span>分
+                                </span>
+                                <span class="badge bg-info">
+                                    <i class="fas fa-list me-1"></i>
+                                    题目数: <span th:text="${questions.size()}">0</span>道
+                                </span>
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-signal me-1"></i>
+                                    难度: <span th:text="${paper.difficultyLevel == 'easy' ? '简单' : paper.difficultyLevel == 'medium' ? '中等' : paper.difficultyLevel == 'hard' ? '困难' : '未设置'}">中等</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                创建时间: <span th:text="${#temporals.format(paper.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 10:00</span>
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-edit me-1"></i>
+                                更新时间: <span th:text="${#temporals.format(paper.updatedAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 10:00</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="detail-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-list me-2"></i>题目列表
+                    </h5>
+                    
+                    <div th:if="${#lists.isEmpty(questions)}" class="text-center py-5">
+                        <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无题目</h5>
+                        <p class="text-muted">该试卷还没有添加任何题目</p>
+                    </div>
+                    
+                    <div th:each="question, iterStat : ${questions}" class="question-item">
+                        <div class="d-flex align-items-start">
+                            <div class="question-number" th:text="${iterStat.count}">1</div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge bg-primary question-type-badge me-2" 
+                                              th:text="${question.questionTypeDisplayName}">
+                                            选择题
+                                        </span>
+                                        <span class="badge bg-warning difficulty-badge" 
+                                              th:text="${question.difficultyDisplayName}">
+                                            中等
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-star me-1"></i>
+                                        分值: <span th:text="${questionScoreMap.get(question.id) != null ? questionScoreMap.get(question.id) : '未设置'}">5</span>分
+                                    </small>
+                                </div>
+                                
+                                <div class="question-content mb-3">
+                                    <!-- 非选择题显示题目内容 -->
+                                    <div th:if="${question.questionType == 'P' or question.questionType == 'R'}" 
+                                         class="code-block" th:text="${question.content}">题目内容</div>
+                                    <p th:if="${question.questionType != 'P' and question.questionType != 'R' and question.questionType != 'C'}" 
+                                       class="mb-2" th:text="${question.content}">题目内容</p>
+                                    
+                                    <!-- 选择题显示完整内容（包括选项） -->
+                                    <div th:if="${question.questionType == 'C'}">
+                                        <div th:text="${question.content}">题目内容</div>
+                                        
+                                        <!-- 选项列表 -->
+                                        <div class="options mt-3">
+                                            <div th:if="${question.optionA != null and !#strings.isEmpty(question.optionA)}" 
+                                                 class="option-item mb-2 p-2 border rounded bg-light">
+                                                A. <span th:text="${question.optionA}">选项A</span>
+                                            </div>
+                                            <div th:if="${question.optionB != null and !#strings.isEmpty(question.optionB)}" 
+                                                 class="option-item mb-2 p-2 border rounded bg-light">
+                                                B. <span th:text="${question.optionB}">选项B</span>
+                                            </div>
+                                            <div th:if="${question.optionC != null and !#strings.isEmpty(question.optionC)}" 
+                                                 class="option-item mb-2 p-2 border rounded bg-light">
+                                                C. <span th:text="${question.optionC}">选项C</span>
+                                            </div>
+                                            <div th:if="${question.optionD != null and !#strings.isEmpty(question.optionD)}" 
+                                                 class="option-item mb-2 p-2 border rounded bg-light">
+                                                D. <span th:text="${question.optionD}">选项D</span>
+                                            </div>
+                                            <div th:if="${(question.optionA == null or #strings.isEmpty(question.optionA)) and (question.optionB == null or #strings.isEmpty(question.optionB)) and (question.optionC == null or #strings.isEmpty(question.optionC)) and (question.optionD == null or #strings.isEmpty(question.optionD))}" 
+                                                 class="text-muted mt-2 p-2 border rounded bg-warning">
+                                                ⚠️ 该选择题缺少选项数据
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="question-answer">
+                                    <strong>参考答案:</strong>
+                                    <div th:if="${question.questionType == 'P' or question.questionType == 'R'}" 
+                                         class="code-block mt-2" th:text="${question.answer}">答案内容</div>
+                                    <p th:if="${question.questionType != 'P' and question.questionType != 'R'}" 
+                                       class="text-success mb-0" th:text="${question.answer}">答案内容</p>
+                                </div>
+                                
+                                <div th:if="${question.knowledgeTag != null and question.knowledgeTag != ''}" 
+                                     class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-tag me-1"></i>
+                                        知识点: <span th:text="${question.knowledgeTag}">知识点标签</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

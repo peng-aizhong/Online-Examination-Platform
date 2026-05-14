@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅卷工作台 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .grading-container {
+            display: flex;
+            height: calc(100vh - 100px);
+            gap: 20px;
+        }
+        
+        .task-list-panel {
+            width: 350px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .grading-panel {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .task-list-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .task-list-content {
+            height: calc(100% - 80px);
+            overflow-y: auto;
+        }
+        
+        .task-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f3f4;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .task-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .task-item.active {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .task-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .task-status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .task-status.in-progress {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .task-status.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .grading-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .grading-content {
+            height: calc(100% - 80px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .question-section h6 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .scoring-area {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            display: block !important;
+            visibility: visible !important;
+            z-index: 10;
+            position: relative;
+        }
+        
+        .score-input {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .score-input input {
+            width: 120px;
+        }
+        
+        .max-score {
+            font-size: 16px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .feedback-input textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .grading-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .code-block code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        
+        .stats-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+        
+        /* 试卷分组样式 */
+        .paper-group {
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .paper-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .paper-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .paper-tasks {
+            background: white;
+        }
+        
+        .paper-tasks .task-item {
+            border-bottom: 1px solid #f8f9fa;
+            margin: 0;
+            border-radius: 0;
+        }
+        
+        .paper-tasks .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .paper-tasks .task-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- 顶部导航 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/teacher/dashboard">首页</a></li>
+                        <li class="breadcrumb-item active">阅卷工作台</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- 阅卷工作台 -->
+        <div class="grading-container">
+            <!-- 左侧任务列表 -->
+            <div class="task-list-panel">
+                <div class="task-list-header">
+                    <h5 class="mb-2">
+                        <i class="fas fa-tasks me-2"></i>阅卷任务
+                    </h5>
+                    <div class="progress-bar">
+                        <div class="progress-fill" th:style="'width: ' + ${totalTasks > 0 ? (completedTasks * 100 / totalTasks) : 0} + '%;'"></div>
+                    </div>
+                    <small class="text-muted">已完成 <span th:text="${completedTasks}">0</span>/<span th:text="${totalTasks}">0</span> 题</small>
+                </div>
+                
+                <div class="task-list-content">
+                    <!-- 按试卷分组的任务项 -->
+                    <div th:each="paperEntry : ${tasksByPaper}" class="paper-group">
+                        <div class="paper-header">
+                            <h6 class="paper-title">
+                                <i class="fas fa-file-alt me-2"></i>
+                                <span th:text="${paperEntry.key}">试卷名称</span>
+                                <small class="text-muted ms-2" th:text="'(' + ${paperEntry.value.size()} + '题)'">(0题)</small>
+                            </h6>
+                        </div>
+                        
+                        <div class="paper-tasks">
+                            <div th:each="task, iterStat : ${paperEntry.value}" 
+                                 th:class="'task-item' + (${iterStat.first and paperEntry == tasksByPaper.entrySet().iterator().next()} ? ' active' : '')" 
+                                 th:data-question-id="${task.questionId}"
+                                 th:data-session-id="${task.sessionId}"
+                                 onclick="selectTaskFromData(this)">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <strong th:text="${#strings.concat(task.questionType == 'S' ? '简答题' : (task.questionType == 'P' ? '编程题' : '其他题型'), ' #', iterStat.index + 1)}">题目类型</strong>
+                                    <span class="task-status" 
+                                          th:class="'task-status ' + (${task.status == '已完成'} ? 'completed' : 'pending')"
+                                          th:text="${task.status}">待阅卷</span>
+                                </div>
+                                <small class="text-muted" th:text="${#strings.concat('学生：', task.studentName)}">学生姓名</small>
+                                <br>
+                                <small class="text-muted" th:text="${#strings.concat('得分：', task.currentScore, '/', task.maxScore)}">得分</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 如果没有任务 -->
+                    <div th:if="${tasksByPaper.empty}" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>暂无需要阅卷的题目</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧阅卷区域 -->
+            <div class="grading-panel">
+                <div class="grading-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 id="currentTaskTitle" th:text="${tasksByPaper.empty ? '暂无任务' : #strings.concat(tasksByPaper.entrySet().iterator().next().value[0].questionType == 'S' ? '简答题' : (tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P' ? '编程题' : '其他题型'), ' #1 - ', tasksByPaper.entrySet().iterator().next().value[0].studentName)}">暂无任务</h4>
+                            <p class="text-muted mb-0" th:text="${tasksByPaper.empty ? '题目类型：无 | 分值：0分' : #strings.concat('题目类型：', tasksByPaper.entrySet().iterator().next().value[0].questionType == 'S' ? '简答题' : (tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P' ? '编程题' : '其他题型'), ' | 分值：', tasksByPaper.entrySet().iterator().next().value[0].maxScore, '分')}">题目类型：无 | 分值：0分</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="previousTask()">
+                                <i class="fas fa-chevron-left me-1"></i>上一题
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="nextTask()">
+                                下一题 <i class="fas fa-chevron-right me-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grading-content">
+                    <!-- 题目内容 -->
+                    <div class="question-section">
+                        <h6><i class="fas fa-question-circle me-2"></i>题目内容</h6>
+                        <div id="questionContent" th:text="${tasksByPaper.empty ? '暂无题目内容' : tasksByPaper.entrySet().iterator().next().value[0].questionContent}">
+                            暂无题目内容
+                        </div>
+                    </div>
+                    
+                    <!-- 标准答案 -->
+                    <div class="question-section">
+                        <h6><i class="fas fa-key me-2"></i>标准答案</h6>
+                        <div id="standardAnswer">
+                            <div th:if="${tasksByPaper.empty}" class="text-muted">暂无标准答案</div>
+                            <div th:unless="${tasksByPaper.empty}">
+                                <div th:if="${tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P'}" class="code-block">
+                                    <pre><code th:text="${tasksByPaper.entrySet().iterator().next().value[0].standardAnswer}">暂无标准答案</code></pre>
+                                </div>
+                                <div th:unless="${tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P'}">
+                                    <p class="text-success fw-bold" th:text="${tasksByPaper.entrySet().iterator().next().value[0].standardAnswer}">暂无标准答案</p>
+                                </div>
+                                <p class="text-muted small" th:text="${tasksByPaper.entrySet().iterator().next().value[0].explanation}">暂无解释</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 学生答案 -->
+                    <div class="question-section">
+                        <h6><i class="fas fa-user-graduate me-2"></i>学生答案</h6>
+                        <div id="studentAnswer">
+                            <div th:if="${tasksByPaper.empty}" class="text-muted">暂无学生答案</div>
+                            <div th:unless="${tasksByPaper.empty}">
+                                <div th:if="${tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P'}" class="code-block">
+                                    <pre><code th:text="${tasksByPaper.entrySet().iterator().next().value[0].studentAnswer}">暂无学生答案</code></pre>
+                                </div>
+                                <div th:unless="${tasksByPaper.entrySet().iterator().next().value[0].questionType == 'P'}">
+                                    <p class="text-primary fw-bold" th:text="${tasksByPaper.entrySet().iterator().next().value[0].studentAnswer}">暂无学生答案</p>
+                                </div>
+                            </div>
+                            <p class="text-muted small">学生提交的答案</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 评分区域 -->
+                    <div class="scoring-area">
+                        <h6><i class="fas fa-star me-2"></i>评分</h6>
+                        
+                        <div class="score-input">
+                            <label class="form-label fw-bold">得分：</label>
+                            <input type="number" class="form-control" id="scoreInput" 
+                                   min="0" step="0.5" value="0" 
+                                   placeholder="请输入得分">
+                            <span class="max-score">/ <span id="maxScore">0</span> 分</span>
+                        </div>
+                        
+                        <div class="feedback-input">
+                            <label class="form-label fw-bold">评语：</label>
+                            <textarea class="form-control" id="feedbackInput" 
+                                      placeholder="请输入评语（可选）">答案正确，理解准确。</textarea>
+                        </div>
+                        
+                        <div class="grading-actions">
+                            <button class="btn btn-success" onclick="submitScore()">
+                                <i class="fas fa-check me-2"></i>提交评分
+                            </button>
+                            <button class="btn btn-warning" onclick="saveDraft()">
+                                <i class="fas fa-save me-2"></i>保存草稿
+                            </button>
+                            <button class="btn btn-info" onclick="autoGrade()">
+                                <i class="fas fa-robot me-2"></i>智能评分
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 统计面板 -->
+                    <div class="stats-panel">
+                        <h6 class="mb-3"><i class="fas fa-chart-bar me-2"></i>阅卷统计</h6>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number text-primary" id="completedCount">0</div>
+                                <div class="stat-label">已完成</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number text-warning" id="inProgressCount">0</div>
+                                <div class="stat-label">阅卷中</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number text-info" id="pendingCount">0</div>
+                                <div class="stat-label">待阅卷</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number text-success" id="totalCount">0</div>
+                                <div class="stat-label">总题数</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 批量操作模态框 -->
+    <div class="modal fade" id="batchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">批量设置得分</label>
+                        <input type="number" class="form-control" id="batchScore" 
+                               min="0" max="20" step="0.5" placeholder="统一得分">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">批量设置评语</label>
+                        <textarea class="form-control" id="batchFeedback" 
+                                  rows="3" placeholder="统一评语"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="applyBatchOperation()">应用</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let currentTaskId = 'task1';
+        let currentSessionId = '';
+        let currentTaskIndex = 0;
+        
+        // 选择任务
+        function selectTask(questionId, sessionId) {
+            // 移除所有active状态
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 添加active状态到选中的任务
+            event.currentTarget.classList.add('active');
+            
+            currentTaskId = questionId;
+            currentSessionId = sessionId;
+            loadTaskContent(questionId, sessionId);
+        }
+        
+        // 从data属性选择任务
+        function selectTaskFromData(element) {
+            const questionId = element.getAttribute('data-question-id');
+            const sessionId = element.getAttribute('data-session-id');
+            
+            // 更新当前任务索引（考虑分组结构）
+            const taskItems = document.querySelectorAll('.task-item');
+            for (let i = 0; i < taskItems.length; i++) {
+                if (taskItems[i] === element) {
+                    currentTaskIndex = i;
+                    break;
+                }
+            }
+            
+            // 移除所有任务项的active状态
+            taskItems.forEach(item => item.classList.remove('active'));
+            // 为当前选中的任务项添加active状态
+            element.classList.add('active');
+            
+            selectTask(questionId, sessionId);
+        }
+        
+        // 获取当前任务信息
+        function getCurrentTask() {
+            return {
+                questionId: currentTaskId,
+                sessionId: currentSessionId
+            };
+        }
+        
+        // 加载任务内容
+        function loadTaskContent(questionId, sessionId) {
+            console.log('加载任务:', questionId, sessionId);
+            
+            // 从当前任务列表中找到对应的任务
+            const taskElement = document.querySelector(`[data-question-id="${questionId}"][data-session-id="${sessionId}"]`);
+            if (!taskElement) {
+                console.error('未找到任务元素');
+                return;
+            }
+            
+            // 更新任务标题
+            const taskTitle = document.getElementById('currentTaskTitle');
+            const questionType = taskElement.querySelector('strong').textContent.split(' #')[0];
+            const studentName = taskElement.querySelector('small').textContent.split('：')[1].split(' |')[0];
+            
+            if (taskTitle) {
+                taskTitle.textContent = `${questionType} - ${studentName}`;
+            }
+            
+            // 更新题目内容（这里需要从服务器获取，暂时使用模拟数据）
+            updateQuestionContent(questionId, sessionId);
+            
+            // 更新评分区域
+            updateScoringArea(questionId, sessionId);
+        }
+        
+        // 更新题目内容
+        function updateQuestionContent(questionId, sessionId) {
+            const questionContent = document.getElementById('questionContent');
+            const standardAnswerContainer = document.querySelector('#standardAnswer');
+            const studentAnswer = document.querySelector('#studentAnswer');
+            
+            // 显示加载状态
+            if (questionContent) {
+                questionContent.innerHTML = '<p>题目内容加载中...</p>';
+            }
+            
+            if (standardAnswerContainer) {
+                standardAnswerContainer.innerHTML = '<p>标准答案加载中...</p>';
+            }
+            
+            if (studentAnswer) {
+                studentAnswer.innerHTML = '<p>学生答案加载中...</p>';
+            }
+            
+            // 通过AJAX获取任务详情
+            $.get('/teacher/grading/workbench/task/' + sessionId + '/' + questionId)
+                .done(function(data) {
+                    if (data.success) {
+                        // 更新题目内容
+                        if (questionContent) {
+                            questionContent.innerHTML = '<p>' + data.questionContent + '</p>';
+                        }
+                        
+                        // 更新标准答案
+                        if (standardAnswerContainer) {
+                            if (data.questionType === 'P') {
+                                standardAnswerContainer.innerHTML = '<div class="code-block"><pre><code>' + (data.standardAnswer || '') + '</code></pre></div>' +
+                                    (data.explanation ? ('<p class="text-muted small">' + data.explanation + '</p>') : '');
+                            } else {
+                                standardAnswerContainer.innerHTML = '<p class="text-success fw-bold">' + (data.standardAnswer || '') + '</p>' +
+                                    (data.explanation ? ('<p class="text-muted small">' + data.explanation + '</p>') : '');
+                            }
+                        }
+                        
+                        // 更新学生答案
+                        if (studentAnswer) {
+                            if (data.questionType === 'P') {
+                                // 编程题显示代码格式
+                                studentAnswer.innerHTML = '<div class="code-block"><pre><code>' + data.studentAnswer + '</code></pre></div>';
+                            } else {
+                                // 其他题型显示普通文本
+                                studentAnswer.innerHTML = '<p class="text-primary fw-bold">' + data.studentAnswer + '</p>';
+                            }
+                        }
+                        
+                        // 更新评分区域
+                        updateScoringAreaFromData(data);
+                    } else {
+                        console.error('获取任务详情失败:', data.message);
+                        if (questionContent) {
+                            questionContent.innerHTML = '<p class="text-danger">加载失败: ' + data.message + '</p>';
+                        }
+                    }
+                })
+                .fail(function() {
+                    console.error('AJAX请求失败');
+                    if (questionContent) {
+                        questionContent.innerHTML = '<p class="text-danger">网络错误，请重试</p>';
+                    }
+                });
+        }
+        
+        // 更新评分区域
+        function updateScoringArea(questionId, sessionId) {
+            const scoreInput = document.getElementById('scoreInput');
+            const maxScoreSpan = document.getElementById('maxScore');
+            const feedbackInput = document.getElementById('feedbackInput');
+            const scoringArea = document.querySelector('.scoring-area');
+            
+            // 确保评分区域可见
+            if (scoringArea) {
+                scoringArea.style.display = 'block';
+                console.log('评分区域已显示');
+            } else {
+                console.error('未找到评分区域');
+            }
+            
+            // 这里应该从服务器获取当前分数和最大分数
+            // 暂时使用模拟数据
+            if (scoreInput) {
+                scoreInput.value = 0;
+                scoreInput.max = 20; // 默认最大分数
+                console.log('评分输入框已设置');
+            } else {
+                console.error('未找到评分输入框');
+            }
+            
+            if (maxScoreSpan) {
+                maxScoreSpan.textContent = 20;
+            }
+            
+            if (feedbackInput) {
+                feedbackInput.value = '';
+            }
+        }
+        
+        // 从数据更新评分区域
+        function updateScoringAreaFromData(data) {
+            const scoreInput = document.getElementById('scoreInput');
+            const maxScoreSpan = document.getElementById('maxScore');
+            const feedbackInput = document.getElementById('feedbackInput');
+            
+            if (scoreInput) {
+                scoreInput.value = data.currentScore;
+                scoreInput.max = data.maxScore;
+            }
+            
+            if (maxScoreSpan) {
+                maxScoreSpan.textContent = data.maxScore;
+            }
+            
+            if (feedbackInput) {
+                feedbackInput.value = '';
+            }
+        }
+        
+        // 上一题
+        function previousTask() {
+            const taskItems = document.querySelectorAll('.task-item');
+            if (currentTaskIndex > 0) {
+                currentTaskIndex--;
+                taskItems[currentTaskIndex].click();
+            }
+        }
+        
+        // 下一题
+        function nextTask() {
+            const taskItems = document.querySelectorAll('.task-item');
+            if (currentTaskIndex < taskItems.length - 1) {
+                currentTaskIndex++;
+                taskItems[currentTaskIndex].click();
+            }
+        }
+        
+        // 提交评分
+        function submitScore() {
+            const score = document.getElementById('scoreInput').value;
+            const feedback = document.getElementById('feedbackInput').value;
+            
+            if (!score || score < 0) {
+                alert('请输入有效的得分');
+                return;
+            }
+            
+            // 获取当前任务信息
+            const currentTask = getCurrentTask();
+            if (!currentTask) {
+                alert('未找到当前任务');
+                return;
+            }
+            
+            // 发送评分到服务器（AJAX）
+            $.post('/teacher/grading/workbench/grade', {
+                sessionId: currentTask.sessionId,
+                questionId: currentTask.questionId,
+                score: score,
+                feedback: feedback
+            }).done(function(res){
+                if (res && res.success) {
+                    updateTaskStatus(currentTask.questionId, 'completed');
+                    updateStatistics();
+                    // 如果所有主观题都已评分，给出提示并可跳转
+                    if (!res.needMoreGrading) {
+                        alert('该试卷已全部评分，系统已标记为已阅卷');
+                    } else {
+                        // 自动跳转下一题
+                    nextTask();
+                    }
+                } else {
+                    alert('评分提交失败：' + (res && res.message ? res.message : '未知错误'));
+                }
+            }).fail(function(){
+                alert('评分提交失败，请重试');
+            });
+        }
+        
+        // 保存草稿
+        function saveDraft() {
+            const score = document.getElementById('scoreInput').value;
+            const feedback = document.getElementById('feedbackInput').value;
+            
+            // 保存到本地存储或发送到服务器
+            localStorage.setItem(`draft_${currentTaskId}`, JSON.stringify({
+                score: score,
+                feedback: feedback,
+                timestamp: new Date().toISOString()
+            }));
+            
+            alert('草稿已保存');
+        }
+        
+        // 智能评分
+        function autoGrade() {
+            // 这里应该调用智能评分算法
+            alert('智能评分功能开发中...');
+        }
+        
+        // 更新任务状态
+        function updateTaskStatus(taskId, status) {
+            const taskItem = document.querySelector(`[onclick="selectTask('${taskId}')"]`);
+            if (taskItem) {
+                const statusSpan = taskItem.querySelector('.task-status');
+                if (statusSpan) {
+                    statusSpan.className = `task-status ${status}`;
+                    statusSpan.textContent = getStatusText(status);
+                }
+            }
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            switch (status) {
+                case 'pending': return '待阅卷';
+                case 'in-progress': return '阅卷中';
+                case 'completed': return '已完成';
+                default: return '未知';
+            }
+        }
+        
+        // 更新统计数据
+        function updateStatistics() {
+            const taskItems = document.querySelectorAll('.task-item');
+            let completedCount = 0;
+            let inProgressCount = 0;
+            let pendingCount = 0;
+            
+            taskItems.forEach(item => {
+                const statusElement = item.querySelector('.task-status');
+                if (statusElement) {
+                    const status = statusElement.textContent.trim();
+                    if (status === '已完成') {
+                        completedCount++;
+                    } else if (status === '阅卷中') {
+                        inProgressCount++;
+                    } else if (status === '待阅卷') {
+                        pendingCount++;
+                    }
+                }
+            });
+            
+            const totalCount = taskItems.length;
+            
+            // 更新统计显示
+            const completedElement = document.getElementById('completedCount');
+            const inProgressElement = document.getElementById('inProgressCount');
+            const pendingElement = document.getElementById('pendingCount');
+            const totalElement = document.getElementById('totalCount');
+            
+            if (completedElement) completedElement.textContent = completedCount;
+            if (inProgressElement) inProgressElement.textContent = inProgressCount;
+            if (pendingElement) pendingElement.textContent = pendingCount;
+            if (totalElement) totalElement.textContent = totalCount;
+            
+            console.log('统计数据更新:', { completedCount, inProgressCount, pendingCount, totalCount });
+        }
+        
+        // 页面加载完成后初始化
+        $(document).ready(function() {
+            console.log('页面初始化开始');
+            
+            // 检查评分区域是否存在
+            const scoringArea = document.querySelector('.scoring-area');
+            console.log('评分区域元素:', scoringArea);
+            
+            // 如果有任务，加载第一个任务
+            const firstTask = document.querySelector('.task-item[data-question-id][data-session-id]');
+            console.log('第一个任务元素:', firstTask);
+            
+            if (firstTask) {
+                const questionId = firstTask.getAttribute('data-question-id');
+                const sessionId = firstTask.getAttribute('data-session-id');
+                console.log('第一个任务ID:', questionId, sessionId);
+                
+                currentTaskId = questionId;
+                currentSessionId = sessionId;
+                loadTaskContent(questionId, sessionId);
+            } else {
+                console.log('未找到任务元素');
+            }
+            
+            // 更新统计数据
+            updateStatistics();
+            
+            // 强制显示评分区域
+            setTimeout(function() {
+                const scoringArea = document.querySelector('.scoring-area');
+                if (scoringArea) {
+                    scoringArea.style.display = 'block';
+                    scoringArea.style.visibility = 'visible';
+                    console.log('评分区域强制显示');
+                } else {
+                    console.error('评分区域不存在');
+                }
+            }, 1000);
+            
+            // 绑定键盘快捷键
+            $(document).keydown(function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.keyCode) {
+                        case 37: // 左箭头
+                            e.preventDefault();
+                            previousTask();
+                            break;
+                        case 39: // 右箭头
+                            e.preventDefault();
+                            nextTask();
+                            break;
+                        case 83: // S键
+                            e.preventDefault();
+                            saveDraft();
+                            break;
+                        case 13: // 回车键
+                            e.preventDefault();
+                            submitScore();
+                            break;
+                    }
+                }
+            });
+            
+            // 自动保存定时器
+            setInterval(function() {
+                saveDraft();
+            }, 30000); // 每30秒自动保存
+        });
+    </script>
+</body>
+</html> 

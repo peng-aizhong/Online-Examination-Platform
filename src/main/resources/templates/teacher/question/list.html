@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库管理 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+        .stats-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stats-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .filter-row {
+            margin-bottom: 20px;
+        }
+        .btn-custom {
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+        }
+        .question-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .table th {
+            background: #f8f9fa;
+            border: none;
+            font-weight: 600;
+        }
+        .table td {
+            border: none;
+            vertical-align: middle;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .status-enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .difficulty-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .difficulty-easy {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .difficulty-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .difficulty-hard {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .type-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            background: #e2e3e5;
+            color: #383d41;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-question-circle text-primary me-3" style="font-size: 2rem;"></i>
+                        <div>
+                            <h2 class="mb-1">题库管理</h2>
+                            <p class="text-muted mb-0">管理所有题目，支持导入、编辑、删除和搜索功能</p>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="/teacher/dashboard" class="btn btn-outline-primary btn-custom">
+                            <i class="fas fa-home me-2"></i>返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-icon text-primary">
+                        <i class="fas fa-list-ul"></i>
+                    </div>
+                    <div class="stats-number" id="totalQuestions">0</div>
+                    <div class="stats-label">题目总数</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-number" id="enabledQuestions">0</div>
+                    <div class="stats-label">启用题目</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-icon text-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stats-number" id="pendingQuestions">0</div>
+                    <div class="stats-label">待审核</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-icon text-info">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stats-number" id="knowledgeTags">0</div>
+                    <div class="stats-label">知识点标签</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索和操作区域 -->
+        <div class="search-section">
+            <!-- 第一行：筛选条件 -->
+            <div class="filter-row">
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-graduation-cap me-2"></i>选择科目
+                        </label>
+                        <select class="form-select" id="subjectFilter">
+                            <option value="">全部科目</option>
+                            <option th:each="subject : ${subjects}" 
+                                    th:value="${subject.subjectId}" 
+                                    th:text="${subject.subjectName}"
+                                    th:selected="${filters.subjectId == subject.subjectId}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-search me-2"></i>题目编号
+                        </label>
+                        <input type="text" class="form-control" id="questionIdFilter" 
+                               placeholder="输入题目编号" th:value="${filters.questionId}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-tag me-2"></i>题目类型
+                        </label>
+                        <select class="form-select" id="questionTypeFilter">
+                            <option value="">全部类型</option>
+                            <option value="C" th:selected="${filters.questionType == 'C'}">选择题</option>
+                            <option value="F" th:selected="${filters.questionType == 'F'}">填空题</option>
+                            <option value="R" th:selected="${filters.questionType == 'R'}">程序运行结果题</option>
+                            <option value="S" th:selected="${filters.questionType == 'S'}">简答题</option>
+                            <option value="P" th:selected="${filters.questionType == 'P'}">编程题</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-chart-line me-2"></i>难度
+                        </label>
+                        <select class="form-select" id="difficultyFilter">
+                            <option value="">全部难度</option>
+                            <option value="easy" th:selected="${filters.difficulty == 'easy'}">简单</option>
+                            <option value="medium" th:selected="${filters.difficulty == 'medium'}">中等</option>
+                            <option value="hard" th:selected="${filters.difficulty == 'hard'}">困难</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-bookmark me-2"></i>知识点
+                        </label>
+                        <input type="text" class="form-control" id="knowledgeTagFilter" 
+                               placeholder="输入知识点" th:value="${filters.keyword}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-info-circle me-2"></i>状态
+                        </label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">全部状态</option>
+                            <option value="启用" th:selected="${filters.status == '启用'}">启用</option>
+                            <option value="禁用" th:selected="${filters.status == '禁用'}">禁用</option>
+                            <option value="待审核" th:selected="${filters.status == '待审核'}">待审核</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 第二行：操作按钮 -->
+            <div class="row">
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-warning btn-custom w-100" id="resetSearch">
+                        <i class="fas fa-undo me-2"></i>重置搜索
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <a href="/teacher/questions/add" class="btn btn-primary btn-custom w-100">
+                        <i class="fas fa-plus me-2"></i>新增题目
+                    </a>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-success btn-custom w-100" id="importQuestions">
+                        <i class="fas fa-upload me-2"></i>导入题目
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-info btn-custom w-100" id="exportQuestions">
+                        <i class="fas fa-download me-2"></i>导出题目
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-primary btn-custom w-100" id="searchBtn">
+                        <i class="fas fa-search me-2"></i>搜索
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-warning btn-custom w-100" id="batchEnable" disabled>
+                        <i class="fas fa-check-circle me-2"></i>批量启用
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-danger btn-custom w-100" id="batchDelete" disabled>
+                        <i class="fas fa-trash me-2"></i>批量删除
+                    </button>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button type="button" class="btn btn-warning btn-custom w-100" id="clearQuestionBank">
+                        <i class="fas fa-broom me-2"></i>清空题库
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div class="question-table">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th width="3%">
+                                <input type="checkbox" class="form-check-input" id="selectAll">
+                            </th>
+                            <th width="5%">编号</th>
+                            <th width="22%">题目内容</th>
+                            <th width="8%">类型</th>
+                            <th width="8%">难度</th>
+                            <th width="10%">科目</th>
+                            <th width="12%">知识点</th>
+                            <th width="8%">状态</th>
+                            <th width="10%">创建时间</th>
+                            <th width="14%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionList">
+                        <tr th:each="question : ${questions}">
+                            <td>
+                                <input type="checkbox" class="form-check-input question-checkbox" 
+                                       th:value="${question.id}">
+                            </td>
+                            <td th:text="${question.id}"></td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px; font-family: 'Courier New', monospace; white-space: pre; font-size: 12px; overflow: hidden; text-overflow: ellipsis;" 
+                                     th:utext="${#strings.abbreviate(#strings.replace(#strings.replace(question.content, '&lt;', '&amp;lt;'), '&gt;', '&amp;gt;'), 50)}"></div>
+                                <div class="mt-1">
+                                    <button type="button" class="btn btn-link btn-sm p-0 me-2"
+                                            th:attr="data-id=${question.id}, data-content=${question.content}, data-type=${question.questionType}, data-difficulty=${question.difficulty}"
+                                            onclick="showQuestionDetail(this.dataset.id, this.dataset.content, this.dataset.type, this.dataset.difficulty)">
+                                        <small class="text-muted">查看详情</small>
+                                    </button>
+                                    <button type="button" class="btn btn-link btn-sm p-0"
+                                            th:attr="data-id=${question.id}"
+                                            onclick="previewQuestion(this.dataset.id)">
+                                        <small class="text-muted">预览</small>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="type-badge" th:text="${question.questionType == 'C' ? '选择题' : 
+                                                                   question.questionType == 'F' ? '填空题' : 
+                                                                   question.questionType == 'R' ? '判断题' : 
+                                                                   question.questionType == 'S' ? '简答题' : '编程题'}"></span>
+                            </td>
+                            <td>
+                                <span class="difficulty-badge" 
+                                      th:classappend="${question.difficulty == 'easy' ? 'difficulty-easy' : 
+                                                      question.difficulty == 'medium' ? 'difficulty-medium' : 'difficulty-hard'}"
+                                      th:text="${question.difficulty == 'easy' ? '简单' : 
+                                               question.difficulty == 'medium' ? '中等' : '困难'}"></span>
+                            </td>
+                            <td th:text="${question.subject != null ? question.subject.subjectName : ''}"></td>
+                            <td>
+                                <span class="badge bg-light text-dark" 
+                                      th:text="${question.knowledgeTag != null ? question.knowledgeTag : '-'}"></span>
+                            </td>
+                            <td>
+                                <span class="status-badge" 
+                                      th:classappend="${question.status == '启用' ? 'status-enabled' : 
+                                                      question.status == '待审核' ? 'status-pending' : 'status-disabled'}"
+                                      th:text="${question.status}"></span>
+                            </td>
+                            <td th:text="${#temporals.format(question.createdAt, 'yyyy-MM-dd')}"></td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a th:href="@{/teacher/questions/{id}/edit(id=${question.id})}" 
+                                       class="btn btn-outline-primary btn-sm" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" 
+                                            th:attr="data-id=${question.id}"
+                                            onclick="toggleQuestionStatus(this.dataset.id)" 
+                                            title="切换状态">
+                                        <i class="fas fa-toggle-on" th:if="${question.status == '启用'}"></i>
+                                        <i class="fas fa-toggle-off" th:if="${question.status != '启用'}"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            th:attr="data-id=${question.id}" onclick="deleteQuestion(this.dataset.id)" title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(questions)}">
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-3"></i>
+                                <p>暂无题目数据</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="row mt-4" th:if="${totalPages > 1}">
+            <div class="col-12">
+                <nav aria-label="题目分页">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                            <a class="page-link" th:with="prevUrl=${'/teacher/questions?page=' + (currentPage - 1) + '&size=20' + 
+                                                           (filters.subjectId != null and filters.subjectId != '' ? '&subjectId=' + filters.subjectId : '') + 
+                                                           (filters.questionId != null and filters.questionId != '' ? '&questionId=' + filters.questionId : '') + 
+                                                           (filters.questionType != null and filters.questionType != '' ? '&questionType=' + filters.questionType : '') + 
+                                                           (filters.difficulty != null and filters.difficulty != '' ? '&difficulty=' + filters.difficulty : '') + 
+                                                           (filters.keyword != null and filters.keyword != '' ? '&keyword=' + filters.keyword : '') + 
+                                                           (filters.status != null and filters.status != '' ? '&status=' + filters.status : '')}"
+                               th:href="${prevUrl}">上一页</a>
+                        </li>
+                        <!-- 第一页 -->
+                        <li class="page-item" th:if="${currentPage > 2}">
+                            <a class="page-link" th:with="pageUrl=${'/teacher/questions?page=0&size=20' + 
+                                                           (filters.subjectId != null and filters.subjectId != '' ? '&subjectId=' + filters.subjectId : '') + 
+                                                           (filters.questionId != null and filters.questionId != '' ? '&questionId=' + filters.questionId : '') + 
+                                                           (filters.questionType != null and filters.questionType != '' ? '&questionType=' + filters.questionType : '') + 
+                                                           (filters.difficulty != null and filters.difficulty != '' ? '&difficulty=' + filters.difficulty : '') + 
+                                                           (filters.keyword != null and filters.keyword != '' ? '&keyword=' + filters.keyword : '') + 
+                                                           (filters.status != null and filters.status != '' ? '&status=' + filters.status : '')}"
+                               th:href="${pageUrl}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${currentPage > 3}">
+                            <span class="page-link">...</span>
+                        </li>
+                        
+                        <!-- 当前页附近的页码 -->
+                        <li class="page-item" th:each="i : ${#numbers.sequence(T(java.lang.Math).max(0, currentPage - 2), T(java.lang.Math).min(totalPages - 1, currentPage + 2))}"
+                            th:classappend="${i == currentPage ? 'active' : ''}">
+                            <a class="page-link" th:with="pageUrl=${'/teacher/questions?page=' + i + '&size=20' + 
+                                                           (filters.subjectId != null and filters.subjectId != '' ? '&subjectId=' + filters.subjectId : '') + 
+                                                           (filters.questionId != null and filters.questionId != '' ? '&questionId=' + filters.questionId : '') + 
+                                                           (filters.questionType != null and filters.questionType != '' ? '&questionType=' + filters.questionType : '') + 
+                                                           (filters.difficulty != null and filters.difficulty != '' ? '&difficulty=' + filters.difficulty : '') + 
+                                                           (filters.keyword != null and filters.keyword != '' ? '&keyword=' + filters.keyword : '') + 
+                                                           (filters.status != null and filters.status != '' ? '&status=' + filters.status : '')}"
+                               th:href="${pageUrl}" th:text="${i + 1}"></a>
+                        </li>
+                        
+                        <!-- 最后一页 -->
+                        <li class="page-item disabled" th:if="${currentPage < totalPages - 4}">
+                            <span class="page-link">...</span>
+                        </li>
+                        <li class="page-item" th:if="${currentPage < totalPages - 3}">
+                            <a class="page-link" th:with="pageUrl=${'/teacher/questions?page=' + (totalPages - 1) + '&size=20' + 
+                                                           (filters.subjectId != null and filters.subjectId != '' ? '&subjectId=' + filters.subjectId : '') + 
+                                                           (filters.questionId != null and filters.questionId != '' ? '&questionId=' + filters.questionId : '') + 
+                                                           (filters.questionType != null and filters.questionType != '' ? '&questionType=' + filters.questionType : '') + 
+                                                           (filters.difficulty != null and filters.difficulty != '' ? '&difficulty=' + filters.difficulty : '') + 
+                                                           (filters.keyword != null and filters.keyword != '' ? '&keyword=' + filters.keyword : '') + 
+                                                           (filters.status != null and filters.status != '' ? '&status=' + filters.status : '')}"
+                               th:href="${pageUrl}" th:text="${totalPages}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                            <a class="page-link" th:with="nextUrl=${'/teacher/questions?page=' + (currentPage + 1) + '&size=20' + 
+                                                           (filters.subjectId != null and filters.subjectId != '' ? '&subjectId=' + filters.subjectId : '') + 
+                                                           (filters.questionId != null and filters.questionId != '' ? '&questionId=' + filters.questionId : '') + 
+                                                           (filters.questionType != null and filters.questionType != '' ? '&questionType=' + filters.questionType : '') + 
+                                                           (filters.difficulty != null and filters.difficulty != '' ? '&difficulty=' + filters.difficulty : '') + 
+                                                           (filters.keyword != null and filters.keyword != '' ? '&keyword=' + filters.keyword : '') + 
+                                                           (filters.status != null and filters.status != '' ? '&status=' + filters.status : '')}"
+                               th:href="${nextUrl}">下一页</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入题目模态框 -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">导入题目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">选择科目</label>
+                            <select class="form-select" name="subjectId" required>
+                                <option value="">请选择科目</option>
+                                <option th:each="subject : ${subjects}" 
+                                        th:value="${subject.subjectId}" 
+                                        th:text="${subject.subjectName}"></option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">选择文件</label>
+                            <input type="file" class="form-control" name="file" 
+                                   accept=".xlsx,.xls,.txt" required>
+                            <div class="form-text">支持Excel(.xlsx, .xls)和文本(.txt)格式</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitImport">导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 题目详情模态框 -->
+    <div class="modal fade" id="questionDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">题目详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">题目编号：</label>
+                                <span id="detailQuestionId"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">题目类型：</label>
+                                <span id="detailQuestionType"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">难度等级：</label>
+                                <span id="detailDifficulty"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">状态：</label>
+                                <span id="detailStatus"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">创建时间：</label>
+                                <span id="detailCreatedAt"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">更新时间：</label>
+                                <span id="detailUpdatedAt"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">题目内容：</label>
+                        <div class="border rounded p-3 bg-light" id="detailContent"></div>
+                    </div>
+                    <div class="mb-3" id="detailOptionsSection" style="display: none;">
+                        <label class="form-label fw-bold">选项：</label>
+                        <div class="border rounded p-3 bg-light" id="detailOptions"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">答案：</label>
+                        <div class="border rounded p-3 bg-light" id="detailAnswer"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">知识点标签：</label>
+                        <span id="detailKnowledgeTag"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="editQuestionBtn">编辑题目</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空题库确认模态框 -->
+    <div class="modal fade" id="clearQuestionBankModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>清空题库确认
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-warning me-2"></i>
+                        <strong>警告：此操作不可恢复！</strong>
+                    </div>
+                    <p>您确定要清空以下科目的所有题目吗？</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">选择科目：</label>
+                        <select class="form-select" id="clearSubjectSelect">
+                            <option value="">请选择要清空的科目</option>
+                            <option th:each="subject : ${subjects}" 
+                                    th:value="${subject.subjectId}" 
+                                    th:text="${subject.subjectName}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">确认输入：</label>
+                        <input type="text" class="form-control" id="confirmText" 
+                               placeholder="请输入 'DELETE' 确认删除">
+                    </div>
+                    <div class="text-muted">
+                        <small>此操作将删除该科目下的所有题目，包括：</small>
+                        <ul class="small">
+                            <li>所有题目内容</li>
+                            <li>题目选项和答案</li>
+                            <li>题目统计信息</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirmClearBtn" disabled>
+                        <i class="fas fa-trash me-2"></i>确认清空
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 加载统计信息
+            loadStatistics();
+            
+            // 搜索按钮点击事件
+            $('#searchBtn').click(function() {
+                performSearch();
+            });
+            
+            // 重置搜索
+            $('#resetSearch').click(function() {
+                resetFilters();
+            });
+            
+            // 导入题目按钮
+            $('#importQuestions').click(function() {
+                $('#importModal').modal('show');
+            });
+            
+            // 导出题目按钮
+            $('#exportQuestions').click(function() {
+                exportQuestions();
+            });
+            
+            // 提交导入
+            $('#submitImport').click(function() {
+                submitImport();
+            });
+            
+            // 清空题库按钮
+            $('#clearQuestionBank').click(function() {
+                $('#clearQuestionBankModal').modal('show');
+            });
+            
+            // 科目筛选变化时更新统计
+            $('#subjectFilter').change(function() {
+                loadStatistics();
+            });
+            
+            // 清空题库确认输入验证
+            $('#confirmText').on('input', function() {
+                const confirmText = $(this).val();
+                const subjectId = $('#clearSubjectSelect').val();
+                $('#confirmClearBtn').prop('disabled', !(confirmText === 'DELETE' && subjectId));
+            });
+            
+            $('#clearSubjectSelect').change(function() {
+                const confirmText = $('#confirmText').val();
+                const subjectId = $(this).val();
+                $('#confirmClearBtn').prop('disabled', !(confirmText === 'DELETE' && subjectId));
+            });
+            
+            // 确认清空按钮
+            $('#confirmClearBtn').click(function() {
+                const subjectId = $('#clearSubjectSelect').val();
+                clearQuestionBank(subjectId);
+            });
+            
+            // 回车键搜索
+            $('.form-control, .form-select').keypress(function(e) {
+                if (e.which == 13) {
+                    performSearch();
+                }
+            });
+            
+            // 全选/取消全选
+            $('#selectAll').change(function() {
+                $('.question-checkbox').prop('checked', $(this).prop('checked'));
+                updateBatchButtons();
+            });
+            
+            // 单个选择框变化
+            $(document).on('change', '.question-checkbox', function() {
+                updateBatchButtons();
+                // 检查是否所有复选框都被选中
+                const totalCheckboxes = $('.question-checkbox').length;
+                const checkedCheckboxes = $('.question-checkbox:checked').length;
+                $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes);
+            });
+            
+            // 批量启用按钮
+            $('#batchEnable').click(function() {
+                batchToggleStatus('启用');
+            });
+            
+            // 批量删除按钮
+            $('#batchDelete').click(function() {
+                batchDelete();
+            });
+        });
+
+        // 加载统计信息
+        function loadStatistics() {
+            const subjectId = $('#subjectFilter').val();
+            let url = '/teacher/questions/statistics';
+            if (subjectId) {
+                url += '?subjectId=' + encodeURIComponent(subjectId);
+            }
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    $('#totalQuestions').text(data.totalCount || 0);
+                    $('#enabledQuestions').text(data.enabledCount || 0);
+                    $('#pendingQuestions').text(data.pendingCount || 0);
+                    $('#knowledgeTags').text(data.knowledgeTagCount || 0);
+                },
+                error: function() {
+                    console.log('获取统计信息失败');
+                }
+            });
+        }
+
+        // 清空题库
+        function clearQuestionBank(subjectId) {
+            if (!subjectId) {
+                alert('请先选择要清空的科目');
+                return;
+            }
+            const confirmText = $('#confirmText').val();
+            if (confirmText !== 'DELETE') {
+                alert('请在确认输入框中输入 DELETE');
+                return;
+            }
+            $.ajax({
+                url: '/teacher/questions/clear',
+                method: 'POST',
+                data: { subjectId: subjectId },
+                success: function(response) {
+                    if (response && response.success) {
+                        alert('清空成功！已删除题目数量：' + (response.deleted || 0));
+                        $('#clearQuestionBankModal').modal('hide');
+                        // 刷新统计与列表
+                        loadStatistics();
+                        window.location.reload();
+                    } else {
+                        alert('清空失败：' + (response && response.message ? response.message : '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr && xhr.responseText ? xhr.responseText : '网络或服务器错误'));
+                }
+            });
+        }
+
+        // 执行搜索
+        function performSearch() {
+            const subjectId = $('#subjectFilter').val();
+            const questionId = $('#questionIdFilter').val();
+            const questionType = $('#questionTypeFilter').val();
+            const difficulty = $('#difficultyFilter').val();
+            const knowledgeTag = $('#knowledgeTagFilter').val();
+            const status = $('#statusFilter').val();
+            
+            let url = '/teacher/questions?';
+            const params = [];
+            
+            if (subjectId) params.push('subjectId=' + encodeURIComponent(subjectId));
+            if (questionId) params.push('questionId=' + encodeURIComponent(questionId));
+            if (questionType) params.push('questionType=' + encodeURIComponent(questionType));
+            if (difficulty) params.push('difficulty=' + encodeURIComponent(difficulty));
+            if (knowledgeTag) params.push('keyword=' + encodeURIComponent(knowledgeTag));
+            if (status) params.push('status=' + encodeURIComponent(status));
+            
+            if (params.length > 0) {
+                url += params.join('&');
+            }
+            
+            // 添加分页参数，重置到第一页
+            url += '&page=0';
+            
+            window.location.href = url;
+        }
+
+        // 重置过滤器
+        function resetFilters() {
+            $('#subjectFilter').val('');
+            $('#questionIdFilter').val('');
+            $('#questionTypeFilter').val('');
+            $('#difficultyFilter').val('');
+            $('#knowledgeTagFilter').val('');
+            $('#statusFilter').val('');
+        }
+
+        // 提交导入
+        function submitImport() {
+            const formData = new FormData($('#importForm')[0]);
+            
+            $.ajax({
+                url: '/teacher/questions/import',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        alert('导入成功！');
+                        $('#importModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('导入失败：' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('导入失败，请检查文件格式和网络连接');
+                }
+            });
+        }
+
+        // 删除题目
+        function deleteQuestion(questionId) {
+            if (confirm('确定要删除这道题目吗？此操作不可恢复。')) {
+                $.ajax({
+                    url: '/teacher/questions/' + questionId + '/delete',
+                    method: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('删除成功！');
+                            location.reload();
+                        } else {
+                            alert('删除失败：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('删除失败，请稍后重试');
+                    }
+                });
+            }
+        }
+
+        // 切换题目状态
+        function toggleQuestionStatus(questionId) {
+            if (confirm('确定要切换这道题目的状态吗？')) {
+                $.ajax({
+                    url: '/teacher/questions/' + questionId + '/toggle-status',
+                    method: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('状态切换成功！');
+                            location.reload();
+                        } else {
+                            alert('状态切换失败：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('状态切换失败，请稍后重试');
+                    }
+                });
+            }
+        }
+
+        // 导出题目
+        function exportQuestions() {
+            const subjectId = $('#subjectFilter').val();
+            const questionType = $('#questionTypeFilter').val();
+            const difficulty = $('#difficultyFilter').val();
+            const status = $('#statusFilter').val();
+            
+            let url = '/teacher/questions/export?';
+            const params = [];
+            
+            if (subjectId) params.push('subjectId=' + encodeURIComponent(subjectId));
+            if (questionType) params.push('questionType=' + encodeURIComponent(questionType));
+            if (difficulty) params.push('difficulty=' + encodeURIComponent(difficulty));
+            if (status) params.push('status=' + encodeURIComponent(status));
+            
+            if (params.length > 0) {
+                url += params.join('&');
+            }
+            
+            // 创建临时链接并点击下载
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '题目列表.xlsx';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 显示题目详情
+        function showQuestionDetail(questionId, content, questionType, difficulty) {
+            // 设置基本信息
+            $('#detailQuestionId').text(questionId);
+            // 保持代码格式，使用等宽字体和预格式化
+            $('#detailContent').html('<pre style="font-family: \'Courier New\', monospace; white-space: pre; margin: 0; background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 13px;">' + 
+                content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>');
+            
+            // 设置题目类型
+            let typeText = '';
+            switch(questionType) {
+                case 'C': typeText = '选择题'; break;
+                case 'F': typeText = '填空题'; break;
+                case 'R': typeText = '程序运行结果题'; break;
+                case 'S': typeText = '简答题'; break;
+                case 'P': typeText = '编程题'; break;
+                default: typeText = questionType;
+            }
+            $('#detailQuestionType').text(typeText);
+            
+            // 设置难度
+            let difficultyText = '';
+            switch(difficulty) {
+                case 'easy': difficultyText = '简单'; break;
+                case 'medium': difficultyText = '中等'; break;
+                case 'hard': difficultyText = '困难'; break;
+                default: difficultyText = difficulty;
+            }
+            $('#detailDifficulty').text(difficultyText);
+            
+            // 获取题目的完整信息
+            $.ajax({
+                url: '/teacher/questions/' + questionId,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.question) {
+                        const question = response.question;
+                        
+                        // 设置状态
+                        $('#detailStatus').text(question.status || '未知');
+                        
+                        // 设置创建时间和更新时间
+                        if (question.createdAt) {
+                            $('#detailCreatedAt').text(new Date(question.createdAt).toLocaleString('zh-CN'));
+                        }
+                        if (question.updatedAt) {
+                            $('#detailUpdatedAt').text(new Date(question.updatedAt).toLocaleString('zh-CN'));
+                        }
+                        
+                        // 设置答案
+                        if (question.questionType === 'P' || question.questionType === 'R') {
+                            // 编程题和程序运行结果题保持代码格式
+                            $('#detailAnswer').html('<pre style="font-family: \'Courier New\', monospace; white-space: pre; margin: 0; background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 13px; border: 1px solid #e9ecef; border-left: 4px solid #007bff;">' + 
+                                (question.answer || '暂无答案').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>');
+                        } else {
+                            // 其他题型使用普通文本显示
+                            $('#detailAnswer').text(question.answer || '暂无答案');
+                        }
+                        
+                        // 设置知识点标签
+                        $('#detailKnowledgeTag').text(question.knowledgeTag || '未设置');
+                        
+                        // 如果是选择题，显示选项
+                        if (question.questionType === 'C') {
+                            let optionsHtml = '';
+                            if (question.optionA && question.optionA !== 'null' && question.optionA.trim() !== '') {
+                                optionsHtml += `<div class="mb-2">A. ${question.optionA}</div>`;
+                            }
+                            if (question.optionB && question.optionB !== 'null' && question.optionB.trim() !== '') {
+                                optionsHtml += `<div class="mb-2">B. ${question.optionB}</div>`;
+                            }
+                            if (question.optionC && question.optionC !== 'null' && question.optionC.trim() !== '') {
+                                optionsHtml += `<div class="mb-2">C. ${question.optionC}</div>`;
+                            }
+                            if (question.optionD && question.optionD !== 'null' && question.optionD.trim() !== '') {
+                                optionsHtml += `<div class="mb-2">D. ${question.optionD}</div>`;
+                            }
+                            
+                            if (optionsHtml) {
+                                $('#detailOptions').html(optionsHtml);
+                                $('#detailOptionsSection').show();
+                            } else {
+                                $('#detailOptionsSection').hide();
+                            }
+                        } else {
+                            $('#detailOptionsSection').hide();
+                        }
+                        
+                        // 设置编辑按钮的链接
+                        $('#editQuestionBtn').off('click').on('click', function() {
+                            window.location.href = '/teacher/questions/' + questionId + '/edit';
+                        });
+                        
+                        // 显示模态框
+                        $('#questionDetailModal').modal('show');
+                    } else {
+                        alert('获取题目详情失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function() {
+                    alert('获取题目详情失败，请稍后重试');
+                }
+            });
+        }
+
+        // 更新批量操作按钮状态
+        function updateBatchButtons() {
+            const checkedCount = $('.question-checkbox:checked').length;
+            $('#batchEnable').prop('disabled', checkedCount === 0);
+            $('#batchDelete').prop('disabled', checkedCount === 0);
+        }
+
+        // 批量切换状态
+        function batchToggleStatus(status) {
+            const selectedIds = getSelectedQuestionIds();
+            if (selectedIds.length === 0) {
+                alert('请选择要操作的题目');
+                return;
+            }
+
+            if (confirm(`确定要将选中的 ${selectedIds.length} 道题目状态切换为"${status}"吗？`)) {
+                let successCount = 0;
+                let failCount = 0;
+                
+                selectedIds.forEach((id, index) => {
+                    $.ajax({
+                        url: '/teacher/questions/' + id + '/toggle-status',
+                        method: 'POST',
+                        async: false,
+                        success: function(response) {
+                            if (response.success) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                            }
+                        },
+                        error: function() {
+                            failCount++;
+                        }
+                    });
+                });
+                
+                alert(`操作完成！成功：${successCount}，失败：${failCount}`);
+                location.reload();
+            }
+        }
+
+        // 批量删除
+        function batchDelete() {
+            const selectedIds = getSelectedQuestionIds();
+            if (selectedIds.length === 0) {
+                alert('请选择要删除的题目');
+                return;
+            }
+
+            if (confirm(`确定要删除选中的 ${selectedIds.length} 道题目吗？此操作不可恢复！`)) {
+                let successCount = 0;
+                let failCount = 0;
+                
+                selectedIds.forEach((id, index) => {
+                    $.ajax({
+                        url: '/teacher/questions/' + id + '/delete',
+                        method: 'POST',
+                        async: false,
+                        success: function(response) {
+                            if (response.success) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                            }
+                        },
+                        error: function() {
+                            failCount++;
+                        }
+                    });
+                });
+                
+                alert(`删除完成！成功：${successCount}，失败：${failCount}`);
+                location.reload();
+            }
+        }
+
+        // 获取选中的题目ID列表
+        function getSelectedQuestionIds() {
+            const selectedIds = [];
+            $('.question-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+            return selectedIds;
+        }
+
+        // 预览题目
+        function previewQuestion(questionId) {
+            $.ajax({
+                url: '/teacher/questions/' + questionId,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.question) {
+                        const question = response.question;
+                        
+                        // 创建预览窗口
+                        const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+                        const previewContent = `
+                            <!DOCTYPE html>
+                            <html lang="zh-CN">
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <title>题目预览 - ${question.id}</title>
+                                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                                <style>
+                                    body { padding: 20px; font-family: 'Microsoft YaHei', sans-serif; }
+                                    .question-content { font-size: 16px; line-height: 1.6; }
+                                    .options { margin: 15px 0; }
+                                    .option { margin: 8px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+                                    .answer { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; }
+                                    .metadata { color: #666; font-size: 14px; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <h3 class="mb-4">题目预览</h3>
+                                    
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong>题目编号：</strong>${question.id}
+                                                </div>
+                                                <div class="col-md-6 text-end">
+                                                    <span class="badge bg-primary me-2">${getQuestionTypeText(question.questionType)}</span>
+                                                    <span class="badge bg-info me-2">${getDifficultyText(question.difficulty)}</span>
+                                                    <span class="badge bg-success">${question.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="question-content mb-4">
+                                                <h5>题目内容：</h5>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <pre style="font-family: 'Courier New', monospace; white-space: pre; margin: 0; font-size: 14px; line-height: 1.4;">${question.content}</pre>
+                                                </div>
+                                            </div>
+                                            
+                                            ${question.questionType === 'C' ? `
+                                            <div class="options mb-4">
+                                                <h5>选项：</h5>
+                                                ${formatOptionsFromDatabase(question)}
+                                            </div>
+                                            ` : ''}
+                                            
+                                            <div class="answer">
+                                                <h5>答案：</h5>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <pre style="font-family: 'Courier New', monospace; white-space: pre; margin: 0; font-size: 14px; line-height: 1.4;">${question.answer || '暂无答案'}</pre>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="metadata mt-4">
+                                                <small>
+                                                    <strong>知识点：</strong>${question.knowledgeTag || '未设置'} | 
+                                                    <strong>创建时间：</strong>${question.createdAt ? new Date(question.createdAt).toLocaleString('zh-CN') : '未知'}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                        `;
+                        
+                        previewWindow.document.write(previewContent);
+                        previewWindow.document.close();
+                    } else {
+                        alert('获取题目信息失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function() {
+                    alert('获取题目信息失败，请稍后重试');
+                }
+            });
+        }
+
+        // 获取题目类型文本
+        function getQuestionTypeText(type) {
+            switch(type) {
+                case 'C': return '选择题';
+                case 'F': return '填空题';
+                case 'R': return '程序运行结果题';
+                case 'S': return '简答题';
+                case 'P': return '编程题';
+                default: return type;
+            }
+        }
+
+        // 获取难度文本
+        function getDifficultyText(difficulty) {
+            switch(difficulty) {
+                case 'easy': return '简单';
+                case 'medium': return '中等';
+                case 'hard': return '困难';
+                default: return difficulty;
+            }
+        }
+
+        // 格式化选项（从JSON字符串）
+        function formatOptions(options) {
+            try {
+                const optionsArray = JSON.parse(options);
+                if (Array.isArray(optionsArray)) {
+                    return optionsArray.map((option, index) => 
+                        `<div class="option">${String.fromCharCode(65 + index)}. ${option}</div>`
+                    ).join('');
+                }
+                return options;
+            } catch (e) {
+                return options;
+            }
+        }
+        
+        // 从数据库的独立选项字段格式化选项
+        function formatOptionsFromDatabase(question) {
+            const options = [];
+            if (question.optionA && question.optionA !== 'null' && question.optionA.trim() !== '') {
+                options.push(`<div class="option">A. ${question.optionA}</div>`);
+            }
+            if (question.optionB && question.optionB !== 'null' && question.optionB.trim() !== '') {
+                options.push(`<div class="option">B. ${question.optionB}</div>`);
+            }
+            if (question.optionC && question.optionC !== 'null' && question.optionC.trim() !== '') {
+                options.push(`<div class="option">C. ${question.optionC}</div>`);
+            }
+            if (question.optionD && question.optionD !== 'null' && question.optionD.trim() !== '') {
+                options.push(`<div class="option">D. ${question.optionD}</div>`);
+            }
+            
+            return options.length > 0 ? options.join('') : '<div class="option text-muted">暂无选项</div>';
+        }
+    </script>
+</body>
+</html> 

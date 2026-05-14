@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户统计 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        
+        .stat-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+        
+        .stat-card.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .stat-card.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+        }
+        
+        .stat-card.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 管理员面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${admin.username}">用户名</span>
+                    (管理员)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">管理功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/subjects">
+                                <i class="fas fa-book me-2"></i>科目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/exams">
+                                <i class="fas fa-file-alt me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/statistics">
+                                <i class="fas fa-chart-bar me-2"></i>系统统计
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-users me-2"></i>用户统计</h2>
+                    <div>
+                        <a href="/admin/statistics" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i>返回统计
+                        </a>
+                        <button class="btn btn-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt me-1"></i>刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 用户统计概览 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card success">
+                            <h3 th:text="${userStats.totalUsers}">0</h3>
+                            <p>总用户数</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card info">
+                            <h3 th:text="${userStats.activeUsers}">0</h3>
+                            <p>活跃用户</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card warning">
+                            <h3 th:text="${userStats.newUsers}">0</h3>
+                            <p>新增用户</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card danger">
+                            <h3 th:text="${userStats.inactiveUsers}">0</h3>
+                            <p>非活跃用户</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户角色分布 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>用户角色分布
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="userRoleChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>用户活跃度
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="userActivityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户注册趋势 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>用户注册趋势
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="userRegistrationChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户详情表格 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>用户详情
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>用户名</th>
+                                                <th>角色</th>
+                                                <th>部门</th>
+                                                <th>注册时间</th>
+                                                <th>最后登录</th>
+                                                <th>状态</th>
+                                                <th>考试次数</th>
+                                                <th>平均分</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="user : ${userDetails}">
+                                                <td th:text="${user.username}">用户名</td>
+                                                <td>
+                                                    <span class="badge" 
+                                                          th:classappend="${user.role == 'admin'} ? 'bg-danger' : (${user.role == 'teacher'} ? 'bg-warning' : 'bg-info')"
+                                                          th:text="${user.role}">角色</span>
+                                                </td>
+                                                <td th:text="${user.department}">部门</td>
+                                                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}">注册时间</td>
+                                                <td th:text="${user.lastLoginAt != null ? #temporals.format(user.lastLoginAt, 'yyyy-MM-dd HH:mm') : '从未登录'}">最后登录</td>
+                                                <td>
+                                                    <span class="badge" 
+                                                          th:classappend="${user.isActive} ? 'bg-success' : 'bg-secondary'"
+                                                          th:text="${user.isActive ? '活跃' : '非活跃'}">状态</span>
+                                                </td>
+                                                <td th:text="${user.examCount}">0</td>
+                                                <td th:text="${user.averageScore != null ? #numbers.formatDecimal(user.averageScore, 1, 1) : 'N/A'}">0.0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 刷新数据
+        function refreshData() {
+            location.reload();
+        }
+
+        // 用户角色分布饼图
+        const userRoleCtx = document.getElementById('userRoleChart').getContext('2d');
+        const userRoleChart = new Chart(userRoleCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['管理员', '教师', '学生'],
+                datasets: [{
+                    data: [
+                        /*[[${userStats.adminCount}]]*/ 0,
+                        /*[[${userStats.teacherCount}]]*/ 0,
+                        /*[[${userStats.studentCount}]]*/ 0
+                    ],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(23, 162, 184, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(220, 53, 69)',
+                        'rgb(255, 193, 7)',
+                        'rgb(23, 162, 184)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // 用户活跃度柱状图
+        const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+        const userActivityChart = new Chart(userActivityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['活跃用户', '非活跃用户'],
+                datasets: [{
+                    label: '用户数量',
+                    data: [
+                        /*[[${userStats.activeUsers}]]*/ 0,
+                        /*[[${userStats.inactiveUsers}]]*/ 0
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(108, 117, 125, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(40, 167, 69)',
+                        'rgb(108, 117, 125)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 用户注册趋势线图
+        const userRegistrationCtx = document.getElementById('userRegistrationChart').getContext('2d');
+        const userRegistrationChart = new Chart(userRegistrationCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '注册用户数',
+                    data: [],
+                    borderColor: 'rgb(102, 126, 234)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 加载用户注册趋势数据
+        function loadUserRegistrationTrend() {
+            fetch('/admin/statistics/api/trends/users')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.date);
+                    const counts = data.map(item => item.count);
+                    
+                    userRegistrationChart.data.labels = labels;
+                    userRegistrationChart.data.datasets[0].data = counts;
+                    userRegistrationChart.update();
+                })
+                .catch(error => console.error('Error loading user registration trend:', error));
+        }
+
+        // 页面加载完成后加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserRegistrationTrend();
+        });
+    </script>
+</body>
+</html>

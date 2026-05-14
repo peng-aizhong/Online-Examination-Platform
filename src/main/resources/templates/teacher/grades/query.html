@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩查询 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+        }
+        
+        .grade-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .grade-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+        }
+        
+        .status-badge {
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        
+        .score-excellent {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .score-good {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        
+        .score-pass {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .score-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        /* 表格样式 */
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+            padding: 12px 15px;
+        }
+        
+        .table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .score-value {
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        .btn-group .btn {
+            border-radius: 4px;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filter-form {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/teacher">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 教师面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${user.username}">用户名</span>
+                    (<span th:text="${#strings.equals(user.role, 'admin') ? '管理员' : (#strings.equals(user.role, 'teacher') ? '教师' : (#strings.equals(user.role, 'student') ? '学生' : user.role))}">角色</span>)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">教师功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/questions">
+                                <i class="fas fa-question-circle me-2"></i>题目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/papers">
+                                <i class="fas fa-file-alt me-2"></i>试卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/exams">
+                                <i class="fas fa-list me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/grading">
+                                <i class="fas fa-check-double me-2"></i>阅卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/teacher/grades">
+                                <i class="fas fa-chart-line me-2"></i>成绩查询
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/resources">
+                                <i class="fas fa-book me-2"></i>学习资源
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/profile">
+                                <i class="fas fa-cog me-2"></i>个人设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 顶部操作栏 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2><i class="fas fa-chart-line me-2"></i>成绩查询</h2>
+                                <p class="text-muted">查看学生考试成绩和统计分析</p>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-secondary" onclick="refreshData()">
+                                    <i class="fas fa-refresh me-2"></i>刷新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 筛选表单 -->
+                <div class="filter-form">
+                    <form method="get" action="/teacher/grades">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">学生姓名</label>
+                                <input type="text" class="form-control" name="studentName" 
+                                       th:value="${studentName}" placeholder="请输入学生姓名">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">试卷</label>
+                                <select class="form-select" name="paperId">
+                                    <option value="">全部试卷</option>
+                                    <option th:each="paper : ${papers}" 
+                                            th:value="${paper.paperId}" 
+                                            th:text="${paper.paperName}"
+                                            th:selected="${paperId == paper.paperId}">试卷名称</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">开始日期</label>
+                                <input type="date" class="form-control" name="startDate" th:value="${startDate}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">结束日期</label>
+                                <input type="date" class="form-control" name="endDate" th:value="${endDate}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search me-1"></i>查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="row mb-4" th:if="${statistics != null}">
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h4 th:text="${statistics.totalCount}">0</h4>
+                            <p class="text-muted mb-0">总人数</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-chart-bar fa-2x text-success mb-2"></i>
+                            <h4 th:text="${statistics.averageScore}">0</h4>
+                            <p class="text-muted mb-0">平均分</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
+                            <h4 th:text="${statistics.maxScore}">0</h4>
+                            <p class="text-muted mb-0">最高分</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-arrow-down fa-2x text-danger mb-2"></i>
+                            <h4 th:text="${statistics.minScore}">0</h4>
+                            <p class="text-muted mb-0">最低分</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
+                            <h4 th:text="${statistics.passCount}">0</h4>
+                            <p class="text-muted mb-0">及格人数</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-percentage fa-2x text-secondary mb-2"></i>
+                            <h4 th:text="${statistics.passRate} + '%'">0%</h4>
+                            <p class="text-muted mb-0">及格率</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成绩列表 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div th:if="${gradePage == null or gradePage.isEmpty()}" class="text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">暂无成绩数据</h5>
+                            <p class="text-muted">当前筛选条件下没有找到任何成绩记录</p>
+                        </div>
+                        
+                        <div th:if="${gradePage != null and !gradePage.isEmpty()}" class="card">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>试卷名称</th>
+                                                <th>学生姓名</th>
+                                                <th>状态</th>
+                                                <th>客观题得分</th>
+                                                <th>主观题得分</th>
+                                                <th>总分</th>
+                                                <th>提交时间</th>
+                                                <th>考试时长</th>
+                                                <th width="120">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="examSession : ${gradePage.content}">
+                                                <td>
+                                                    <strong th:text="${examSession.paper.paperName}">试卷名称</strong>
+                                                </td>
+                                                <td th:text="${examSession.student.username}">学生姓名</td>
+                                                <td>
+                                                    <span class="badge" 
+                                                          th:classappend="${examSession.status.name() == 'submitted'} ? 'bg-warning' : 'bg-success'"
+                                                          th:text="${examSession.status.name() == 'submitted' ? '已提交' : '已阅卷'}">状态</span>
+                                                </td>
+                                                <td>
+                                                    <span class="score-value" th:text="${examSession.objectiveScore != null ? examSession.objectiveScore : 0}">0</span>
+                                                </td>
+                                                <td>
+                                                    <span class="score-value" th:text="${examSession.subjectiveScore != null ? examSession.subjectiveScore : 0}">0</span>
+                                                </td>
+                                                <td>
+                                                    <strong class="text-primary" th:text="${examSession.totalScore != null ? examSession.totalScore : 0}">0</strong>
+                                                </td>
+                                                <td th:text="${#temporals.format(examSession.submittedAt, 'yyyy-MM-dd HH:mm')}">提交时间</td>
+                                                <td th:text="${examSession.paper.duration} + '分钟'">90分钟</td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <a th:href="@{/teacher/grades/{sessionId}(sessionId=${examSession.sessionId})}" 
+                                                           class="btn btn-sm btn-outline-primary" title="查看详情">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 分页 -->
+                        <div th:if="${gradePage != null and gradePage.totalPages > 1}" class="d-flex justify-content-center">
+                            <nav>
+                                <ul class="pagination">
+                                    <li class="page-item" th:classappend="${gradePage.first} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/teacher/grades(studentName=${studentName}, paperId=${paperId}, startDate=${startDate}, endDate=${endDate}, page=${gradePage.number - 1})}">上一页</a>
+                                    </li>
+                                    <li class="page-item" th:each="i : ${#numbers.sequence(0, gradePage.totalPages - 1)}" 
+                                        th:classappend="${i == gradePage.number} ? 'active'">
+                                        <a class="page-link" th:href="@{/teacher/grades(studentName=${studentName}, paperId=${paperId}, startDate=${startDate}, endDate=${endDate}, page=${i})}" 
+                                           th:text="${i + 1}">1</a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${gradePage.last} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/teacher/grades(studentName=${studentName}, paperId=${paperId}, startDate=${startDate}, endDate=${endDate}, page=${gradePage.number + 1})}">下一页</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 刷新数据
+        function refreshData() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

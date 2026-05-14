@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>正在考试 - 考试系统</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    /* 顶部考试信息栏 */
+    .exam-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .exam-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .exam-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ffeb3b;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .timer.warning {
+        color: #ff5722;
+        animation: pulse 1s infinite;
+    }
+
+    .timer.danger {
+        color: #f44336;
+        animation: blink 0.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.3; }
+    }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .progress-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .progress-bar-container {
+            width: 120px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+    .save-status {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .save-status.saving {
+        color: #ffeb3b;
+    }
+
+    .save-status.saved {
+        color: #4caf50;
+    }
+
+    /* 主内容区域 */
+    .main-container {
+        display: flex;
+        margin-top: 80px;
+        min-height: calc(100vh - 80px);
+    }
+
+    /* 左侧题目导航 */
+    .question-nav {
+        width: 300px;
+        background: white;
+        border-right: 1px solid #dee2e6;
+        overflow-y: auto;
+        max-height: calc(100vh - 80px);
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .nav-header {
+        padding: 20px;
+        border-bottom: 1px solid #dee2e6;
+        background: #f8f9fa;
+    }
+
+    .nav-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #495057;
+        margin: 0;
+    }
+
+    .question-list {
+        padding: 10px;
+    }
+
+    .question-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        margin: 5px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .question-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .question-item.current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #5a6fd8;
+    }
+
+    .question-item.answered {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+
+    .question-item.answered.current {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .question-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        margin-right: 12px;
+        background: rgba(255,255,255,0.2);
+    }
+
+    .question-item.current .question-number {
+        background: rgba(255,255,255,0.3);
+    }
+
+    .question-item.answered .question-number {
+        background: #28a745;
+        color: white;
+    }
+
+    .question-info {
+        flex: 1;
+    }
+
+    .question-type {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+
+    .question-item.current .question-type {
+        color: rgba(255,255,255,0.8);
+    }
+
+    .question-score {
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .question-item.current .question-score {
+        color: rgba(255,255,255,0.9);
+    }
+
+    .question-item.answered .question-score {
+        color: #28a745;
+    }
+
+    /* 右侧试卷内容 */
+    .exam-content {
+        flex: 1;
+        background: white;
+        overflow-y: auto;
+        max-height: calc(100vh - 80px);
+    }
+
+    .question-container {
+        padding: 30px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .question-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .question-number-large {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-right: 20px;
+    }
+
+    .question-meta {
+        flex: 1;
+    }
+
+    .question-type-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #e9ecef;
+        color: #495057;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 10px;
+    }
+
+    .question-score-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #667eea;
+        color: white;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .question-content {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 25px;
+        white-space: pre-wrap;
+    }
+
+    .answer-section {
+        margin-bottom: 30px;
+    }
+
+    .answer-label {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 1rem;
+    }
+
+    /* 选择题样式 */
+    .choice-options {
+        display: grid;
+        gap: 10px;
+    }
+
+    .choice-option {
+        display: flex;
+        align-items: flex-start;
+        padding: 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .choice-option:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+
+    .choice-option.selected {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .choice-option input[type="radio"] {
+        margin-right: 12px;
+        margin-top: 2px;
+    }
+
+    .choice-option input[type="checkbox"] {
+        margin-right: 12px;
+        margin-top: 2px;
+    }
+
+    .choice-text {
+        flex: 1;
+        line-height: 1.5;
+    }
+
+        /* 填空题样式 */
+        .fill-blank-container {
+            margin: 15px 0;
+        }
+        
+        .fill-blank-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .fill-blank {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .fill-text {
+            margin-right: 10px;
+            line-height: 1.6;
+        }
+
+        .fill-input {
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 1rem;
+            min-width: 150px;
+            transition: border-color 0.3s ease;
+            margin: 2px;
+        }
+
+        .fill-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+    /* 简答题样式 */
+    .text-answer {
+        width: 100%;
+        min-height: 120px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        font-size: 1rem;
+        line-height: 1.5;
+        resize: vertical;
+        transition: border-color 0.3s ease;
+    }
+
+    .text-answer:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+        /* 程序运行结果题样式 */
+        .program-result-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .program-code-section, .program-result-section {
+            padding: 20px;
+        }
+
+        .program-code-section {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .section-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .program-code-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .program-code-display pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            white-space: pre;
+            word-wrap: normal;
+            overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .program-code-display code {
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            white-space: pre;
+            display: block;
+        }
+
+        /* 编程题样式 */
+        .code-answer {
+            width: 100%;
+            min-height: 200px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .code-answer:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+    /* 题目导航按钮 */
+    .question-nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .nav-btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .nav-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-prev {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-prev:hover:not(:disabled) {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .btn-next {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-next:hover:not(:disabled) {
+        background: #5a6fd8;
+        transform: translateY(-2px);
+    }
+
+    .btn-submit {
+        background: #dc3545;
+        color: white;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+    }
+
+    .btn-submit:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .main-container {
+            flex-direction: column;
+        }
+
+        .question-nav {
+            width: 100%;
+            max-height: 200px;
+            border-right: none;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .question-list {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px;
+        }
+
+        .question-item {
+            min-width: 80px;
+            flex-direction: column;
+            text-align: center;
+            margin: 0 5px;
+        }
+
+        .question-number {
+            margin-right: 0;
+            margin-bottom: 5px;
+        }
+
+        .question-info {
+            font-size: 0.8rem;
+        }
+
+        .exam-header {
+            padding: 10px;
+        }
+
+        .exam-info {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .timer {
+            font-size: 1.2rem;
+        }
+
+        .question-container {
+            padding: 20px;
+        }
+    }
+
+    /* 加载动画 */
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* 确认对话框样式 */
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .btn-close {
+        filter: invert(1);
+    }
+
+    /* 题目卡片样式 */
+    .question-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .question-header {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .question-number {
+        font-weight: bold;
+        color: #333;
+        margin-right: 8px;
+        font-size: 16px;
+    }
+
+    .question-content {
+        flex: 1;
+        line-height: 1.6;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .answer-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    /* 选择题选项样式 */
+    .choice-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .choice-option {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .choice-option:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+    }
+
+    .choice-option.selected {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+
+    .choice-option input[type="radio"] {
+        margin-right: 10px;
+    }
+
+    .choice-text {
+        flex: 1;
+        font-size: 15px;
+        color: #333;
+    }
+
+    /* 填空题样式 */
+    .fill-input {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 15px;
+        width: 200px;
+        margin: 0 5px;
+    }
+
+    .fill-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    /* 程序代码显示样式 */
+    .program-code-display {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 10px 0;
+        overflow-x: auto;
+    }
+
+    .program-code-display pre {
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        color: #333;
+    }
+
+    /* 文本输入框样式 */
+    .text-answer, .code-answer {
+        width: 100%;
+        min-height: 100px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 15px;
+        line-height: 1.5;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .text-answer:focus, .code-answer:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    .code-answer {
+        font-family: 'Courier New', monospace;
+        min-height: 150px;
+    }
+  </style>
+</head>
+<body>
+<!-- 顶部考试信息栏 -->
+<div class="exam-header">
+  <div class="exam-info">
+            <div>
+                <h3 class="exam-title" th:text="${paper.paperName}">考试名称</h3>
+                <div class="text-white-50 small" th:text="${paper.subject != null ? paper.subject.subjectName : '未知科目'}">科目名称</div>
+                <div class="text-white-50 small">
+                    <i class="fas fa-user me-1"></i>
+                    考生：<span th:text="${user != null ? user.username : '未知用户'}">学生姓名</span>
+                </div>
+            </div>
+            <div class="progress-info">
+                <div class="progress-stats">
+                    <span class="progress-text">
+                        <i class="fas fa-list-ol me-1"></i>
+                        <span id="progressText">0/0</span>
+                    </span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timer" id="timer">--:--:--</div>
+                <div class="save-status" id="saveStatus">
+                    <i class="fas fa-save me-1"></i>已保存
+                </div>
+            </div>
+  </div>
+</div>
+
+<!-- 主内容区域 -->
+<div class="main-container">
+  <!-- 左侧题目导航 -->
+  <div class="question-nav">
+    <div class="nav-header">
+      <h5 class="nav-title">
+        <i class="fas fa-list me-2"></i>题目导航
+      </h5>
+      <div class="small text-muted">
+        共 <span th:text="${questions.size()}">0</span> 题
+      </div>
+    </div>
+    <div class="question-list" id="questionList">
+      <!-- 题目列表将通过JavaScript动态生成 -->
+    </div>
+  </div>
+
+  <!-- 右侧试卷内容 -->
+  <div class="exam-content">
+    <div class="question-container">
+      <!-- 当前题目内容 -->
+      <div id="currentQuestion">
+        <!-- 题目内容将通过JavaScript动态生成 -->
+      </div>
+
+      <!-- 题目导航按钮 -->
+      <div class="question-nav-buttons">
+        <button type="button" class="nav-btn btn-prev" id="prevBtn" onclick="previousQuestion()">
+          <i class="fas fa-chevron-left me-2"></i>上一题
+        </button>
+        <div>
+          <button type="button" class="nav-btn btn-submit" id="submitBtn" onclick="showSubmitModal()">
+            <i class="fas fa-check me-2"></i>提交考试
+          </button>
+        </div>
+        <button type="button" class="nav-btn btn-next" id="nextBtn" onclick="nextQuestion()">
+          下一题<i class="fas fa-chevron-right ms-2"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 提交确认对话框 -->
+<div class="modal fade" id="submitModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>确认提交考试
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>您确定要提交考试吗？提交后将无法修改答案。</p>
+        <div class="alert alert-warning">
+          <i class="fas fa-info-circle me-2"></i>
+          请确认您已完成所有题目的作答。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-danger" onclick="submitExam()">
+          <i class="fas fa-check me-2"></i>确认提交
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+        // 从Thymeleaf模板中获取数据
+        var questions = /*[[${questions}]]*/ [];
+        var questionScoreMap = /*[[${questionScoreMap}]]*/ {};
+        var sessionIdFromTemplate = /*[[${session.sessionId}]]*/ '';
+        var paperDuration = /*[[${paper.duration}]]*/ 120;
+        var paperId = /*[[${paper.paperId}]]*/ '';
+        var paperName = /*[[${paper.paperName}]]*/ '';
+        var subjectName = /*[[${paper.subject.subjectName}]]*/ '';
+        var startedAtStr = /*[[${session.startedAt}]]*/ '';
+        
+        // 全局变量
+        let currentQuestionIndex = 0;
+        let answers = {};
+        let timeRemaining = 120 * 60; // 默认120分钟
+        let timerInterval;
+        let saveTimeout;
+        let sessionId = '';
+        let paperId = '';
+
+        // 确保数据正确初始化
+        if (!questions || !Array.isArray(questions)) {
+            questions = [];
+        }
+        
+        if (!questionScoreMap || typeof questionScoreMap !== 'object') {
+            questionScoreMap = {};
+        }
+
+        // 获取sessionId - 多种方式尝试
+        const urlParts = window.location.pathname.split('/');
+        const sessionIdFromUrl = urlParts[urlParts.length - 1];
+        
+        // 方法1: 从URL获取
+        if (sessionIdFromUrl && sessionIdFromUrl !== 'take' && sessionIdFromUrl !== '' && sessionIdFromUrl.length > 0) {
+            sessionId = sessionIdFromUrl;
+            console.log('从URL获取sessionId:', sessionId);
+        }
+        // 方法2: 从模板直接获取
+        else if (sessionIdFromTemplate && sessionIdFromTemplate !== '' && sessionIdFromTemplate !== 'null' && sessionIdFromTemplate.length > 0) {
+            sessionId = sessionIdFromTemplate;
+            console.log('从模板获取sessionId:', sessionId);
+        }
+        // 方法3: 从URL路径中提取（更精确）
+        else {
+            const pathMatch = window.location.pathname.match(/\/exam\/([^\/]+)\/take/);
+            if (pathMatch && pathMatch[1]) {
+                sessionId = pathMatch[1];
+                console.log('从URL正则匹配获取sessionId:', sessionId);
+            }
+        }
+        
+        // 最终检查 - 如果仍然没有sessionId，强制从URL获取
+        if (!sessionId || sessionId === '' || sessionId === 'null') {
+            const currentUrl = window.location.pathname;
+            console.log('当前URL:', currentUrl);
+            
+            // 尝试多种URL模式
+            const patterns = [
+                /\/exam\/([^\/]+)\/take/,
+                /\/exam\/([^\/]+)$/,
+                /\/([^\/]+)\/take$/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = currentUrl.match(pattern);
+                if (match && match[1] && match[1] !== 'take') {
+                    sessionId = match[1];
+                    console.log('强制从URL获取sessionId:', sessionId);
+                    break;
+                }
+            }
+        }
+        
+        // 调试信息
+        console.log('sessionIdFromTemplate:', sessionIdFromTemplate);
+        console.log('最终sessionId:', sessionId);
+        console.log('当前URL:', window.location.pathname);
+
+        if (paperId) {
+            paperId = paperId;
+        }
+        
+        // 确保sessionId不为空
+        if (!sessionId) {
+            console.error('sessionId为空，无法进行考试');
+            // 不在这里return，让DOMContentLoaded事件处理
+        }
+
+  // 初始化
+  document.addEventListener('DOMContentLoaded', function() {
+      // 检查sessionId
+      if (!sessionId || sessionId === '' || sessionId === 'null') {
+          console.error('sessionId获取失败:', {
+              sessionId: sessionId,
+              sessionIdFromTemplate: sessionIdFromTemplate,
+              url: window.location.pathname
+          });
+          document.getElementById('currentQuestion').innerHTML = `
+              <div class="alert alert-danger text-center">
+                  <h5><i class="fas fa-exclamation-triangle me-2"></i>考试会话无效</h5>
+                  <p>无法获取有效的考试会话，请重新开始考试。</p>
+                  <a href="/student/exams" class="btn btn-primary">返回考试列表</a>
+              </div>
+          `;
+          return;
+      }
+      
+      console.log('sessionId获取成功:', sessionId);
+      
+      if (!questions || questions.length === 0) {
+          document.getElementById('currentQuestion').innerHTML = '<div class="alert alert-warning">试卷中没有题目，请联系老师</div>';
+          return;
+      }
+      
+      // 计算正确的剩余时间
+      timeRemaining = calculateTimeRemaining();
+
+      initializeExam();
+      startTimer();
+      generateQuestionList();
+      showQuestion(0);
+      loadSavedAnswers();
+      loadAnswersFromServer();
+      updateProgressDisplay();
+  });
+
+  // 初始化考试
+  function initializeExam() {
+      // 初始化考试
+  }
+
+  // 生成题目列表
+  function generateQuestionList() {
+      const questionList = document.getElementById('questionList');
+      questionList.innerHTML = '';
+
+      if (!questions || questions.length === 0) {
+          questionList.innerHTML = '<div class="alert alert-warning">没有题目数据</div>';
+          return;
+      }
+
+      questions.forEach((question, index) => {
+          // 检查题目数据是否完整
+          if (!question || !question.id || !question.questionType) {
+              return;
+          }
+          
+          const questionItem = document.createElement('div');
+          questionItem.className = 'question-item';
+          questionItem.id = `question-item-${index}`;
+          questionItem.onclick = () => showQuestion(index);
+
+          const questionNumber = document.createElement('div');
+          questionNumber.className = 'question-number';
+          questionNumber.textContent = index + 1;
+
+          const questionInfo = document.createElement('div');
+          questionInfo.className = 'question-info';
+
+          const questionType = document.createElement('div');
+          questionType.className = 'question-type';
+          questionType.textContent = getQuestionTypeName(question.questionType);
+
+          const questionScore = document.createElement('div');
+          questionScore.className = 'question-score';
+          questionScore.textContent = `${questionScoreMap[question.id] || 0}分`;
+
+          questionInfo.appendChild(questionType);
+          questionInfo.appendChild(questionScore);
+          questionItem.appendChild(questionNumber);
+          questionItem.appendChild(questionInfo);
+          questionList.appendChild(questionItem);
+      });
+  }
+
+  // 显示指定题目
+  function showQuestion(index) {
+      if (index < 0 || index >= questions.length) return;
+
+      // 保存当前题目答案
+      saveCurrentAnswer();
+
+      // 更新当前题目索引
+      currentQuestionIndex = index;
+
+      // 更新题目列表样式
+      updateQuestionListStyle();
+
+      // 显示题目内容
+      displayQuestion(questions[index]);
+
+      // 更新导航按钮状态
+      updateNavigationButtons();
+  }
+
+        // 更新题目列表样式
+        function updateQuestionListStyle() {
+            document.querySelectorAll('.question-item').forEach((item, index) => {
+                item.classList.remove('current', 'answered');
+                if (index === currentQuestionIndex) {
+                    item.classList.add('current');
+                }
+                if (answers[questions[index].id]) {
+                    item.classList.add('answered');
+                }
+            });
+            
+            // 更新进度显示
+            updateProgressDisplay();
+        }
+
+        // 更新进度显示
+        function updateProgressDisplay() {
+            const totalQuestions = questions.length;
+            const answeredQuestions = Object.keys(answers).length;
+            const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+            
+            // 更新进度文本
+            const progressText = document.getElementById('progressText');
+            if (progressText) {
+                progressText.textContent = `${answeredQuestions}/${totalQuestions}`;
+            }
+            
+            // 更新进度条
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                progressFill.style.width = `${progressPercentage}%`;
+            }
+        }
+
+        // 显示题目内容
+        function displayQuestion(question) {
+            const container = document.getElementById('currentQuestion');
+            const questionNumber = currentQuestionIndex + 1;
+
+            if (!question) {
+                container.innerHTML = '<div class="alert alert-danger">题目数据加载失败，请刷新页面重试</div>';
+                return;
+            }
+
+            let questionContent = question.content || '';
+            if (!questionContent || questionContent.trim() === '') {
+                container.innerHTML = '<div class="alert alert-warning">题目内容为空，请联系老师</div>';
+                return;
+            }
+
+            // 转义HTML特殊字符，但保留换行符
+            const escapedContent = questionContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/\n/g, '<br>');
+
+            // 根据题型显示不同的样式
+            let html = '';
+            
+            if (question.questionType === 'C') {
+                // 选择题样式
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                            <span class="question-content">${escapedContent}</span>
+                        </div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            } else if (question.questionType === 'F') {
+                // 填空题样式 - 题目内容在generateAnswerInput中处理
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                        </div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            } else if (question.questionType === 'R') {
+                // 程序运行结果题样式
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                        </div>
+                        <div class="question-content">${escapedContent}</div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            } else if (question.questionType === 'S') {
+                // 简答题样式
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                            <span class="question-content">${escapedContent}</span>
+                        </div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            } else if (question.questionType === 'P') {
+                // 编程题样式
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                            <span class="question-content">${escapedContent}</span>
+                        </div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 默认样式
+                html = `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">${questionNumber}.</span>
+                            <span class="question-content">${escapedContent}</span>
+                        </div>
+                        <div class="answer-section">
+                            ${generateAnswerInput(question)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            loadAnswerForQuestion(question);
+        }
+
+        // 生成答题输入框
+        function generateAnswerInput(question) {
+            const questionId = question.id;
+            const questionType = question.questionType;
+
+            switch (questionType) {
+                case 'C': // 选择题
+                    return generateChoiceInput(question);
+                case 'F': // 填空题
+                    return generateFillBlankInput(question);
+                case 'R': // 程序运行结果题
+                    return generateProgramResultInput(question);
+                case 'S': // 简答题
+                    return generateTextInput(question);
+                case 'P': // 编程题
+                    return generateCodeInput(question);
+                default:
+                    return generateTextInput(question);
+            }
+        }
+
+        // 生成选择题输入
+        function generateChoiceInput(question) {
+            let options = [];
+            if (question.optionA && question.optionA.trim() !== '') options.push(question.optionA);
+            if (question.optionB && question.optionB.trim() !== '') options.push(question.optionB);
+            if (question.optionC && question.optionC.trim() !== '') options.push(question.optionC);
+            if (question.optionD && question.optionD.trim() !== '') options.push(question.optionD);
+            
+            let html = '<div class="choice-options">';
+            options.forEach((option, index) => {
+                const optionLetter = String.fromCharCode(65 + index);
+                const escapedOption = option.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                html += `
+                    <div class="choice-option" onclick="selectChoice('${question.id}', '${optionLetter}')">
+                        <input type="radio" name="question_${question.id}" value="${optionLetter}" id="option_${question.id}_${optionLetter}">
+                        <label for="option_${question.id}_${optionLetter}" class="choice-text">${optionLetter}. ${escapedOption}</label>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+  // 生成填空题输入
+  function generateFillBlankInput(question) {
+      const content = question.content || '';
+      
+      // 检查是否包含填空标记
+      if (content.includes('___') || content.includes('[填空]') || content.includes('（填空）')) {
+          // 替换填空标记为输入框，但只显示一个输入框
+          let displayContent = content.replace(/(___|\[填空\]|（填空）)/g, '____');
+          
+          return `
+              <div class="fill-blank-container">
+                  <div class="fill-blank-text">${displayContent}</div>
+                  <input type="text" class="fill-input" id="answer_${question.id}" 
+                        placeholder="请填写答案..." 
+                        oninput="saveAnswer('${question.id}', this.value)">
+              </div>
+          `;
+      } else {
+          return `
+              <textarea class="text-answer" id="answer_${question.id}" 
+                        placeholder="请输入您的答案..." 
+                        oninput="saveAnswer('${question.id}', this.value)"></textarea>
+          `;
+      }
+  }
+
+
+  // 生成文本输入
+  function generateTextInput(question) {
+      return `
+          <textarea class="text-answer" id="answer_${question.id}"
+                    placeholder="请输入您的答案..."
+                    oninput="saveAnswer('${question.id}', this.value)"></textarea>
+      `;
+  }
+
+        // 生成程序运行结果题输入
+        function generateProgramResultInput(question) {
+            return `
+                <div style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">运行结果：</label>
+                    <textarea class="text-answer" id="answer_${question.id}" 
+                              placeholder="请输入程序运行后的输出结果..." 
+                              oninput="saveAnswer('${question.id}', this.value)"></textarea>
+                </div>
+            `;
+        }
+
+        // 生成编程题输入
+        function generateCodeInput(question) {
+            return `
+                <textarea class="code-answer" id="answer_${question.id}" 
+                          placeholder="请输入您的代码..." 
+                          oninput="saveAnswer('${question.id}', this.value)"></textarea>
+            `;
+        }
+
+  // 选择选择题答案
+  function selectChoice(questionId, option) {
+      // 更新视觉状态
+      document.querySelectorAll(`input[name="question_${questionId}"]`).forEach(input => {
+          input.checked = false;
+          input.closest('.choice-option').classList.remove('selected');
+      });
+
+      const selectedInput = document.getElementById(`option_${questionId}_${option}`);
+      if (selectedInput) {
+          selectedInput.checked = true;
+          selectedInput.closest('.choice-option').classList.add('selected');
+      }
+
+      // 保存答案
+      saveAnswer(questionId, option);
+  }
+
+  // 保存答案
+  function saveAnswer(questionId, answer) {
+      answers[questionId] = answer;
+      updateQuestionListStyle();
+      autoSave();
+  }
+
+  // 保存当前题目答案
+  function saveCurrentAnswer() {
+      if (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
+          const question = questions[currentQuestionIndex];
+          const answerInput = document.getElementById(`answer_${question.id}`);
+          if (answerInput) {
+              answers[question.id] = answerInput.value;
+          }
+      }
+  }
+
+        // 加载题目答案
+        function loadAnswerForQuestion(question) {
+            const answer = answers[question.id];
+            if (!answer) return;
+
+            const questionType = question.questionType;
+
+            if (questionType === 'C') {
+                // 选择题
+                const input = document.getElementById(`option_${question.id}_${answer}`);
+                if (input) {
+                    input.checked = true;
+                    input.closest('.choice-option').classList.add('selected');
+                }
+            } else if (questionType === 'F') {
+                // 填空题 - 单个输入框
+                const input = document.getElementById(`answer_${question.id}`);
+                if (input) {
+                    input.value = answer;
+                }
+            } else {
+                // 其他类型题目
+                const input = document.getElementById(`answer_${question.id}`);
+                if (input) {
+                    input.value = answer;
+                }
+            }
+        }
+
+        // 加载已保存的答案
+        function loadSavedAnswers() {
+            // 从本地存储加载已保存的答案
+            const savedAnswers = localStorage.getItem(`exam_answers_${sessionId}`);
+            if (savedAnswers) {
+                try {
+                    answers = JSON.parse(savedAnswers);
+                    updateQuestionListStyle();
+                } catch (e) {
+                    // 加载失败，忽略
+                }
+            }
+        }
+
+  // 自动保存
+  function autoSave() {
+      clearTimeout(saveTimeout);
+
+      // 更新保存状态
+      const saveStatus = document.getElementById('saveStatus');
+      saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+      saveStatus.className = 'save-status saving';
+
+            saveTimeout = setTimeout(() => {
+                // 保存到本地存储
+                localStorage.setItem(`exam_answers_${sessionId}`, JSON.stringify(answers));
+                
+                // 发送到服务器
+                saveToServer();
+                
+                // 更新保存状态
+                saveStatus.innerHTML = '<i class="fas fa-save me-1"></i>已保存';
+                saveStatus.className = 'save-status saved';
+            }, 1000);
+  }
+
+  // 上一题
+  function previousQuestion() {
+      if (currentQuestionIndex > 0) {
+          showQuestion(currentQuestionIndex - 1);
+      }
+  }
+
+  // 下一题
+  function nextQuestion() {
+      if (currentQuestionIndex < questions.length - 1) {
+          showQuestion(currentQuestionIndex + 1);
+      }
+  }
+
+  // 更新导航按钮状态
+  function updateNavigationButtons() {
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+
+      prevBtn.disabled = currentQuestionIndex === 0;
+      nextBtn.disabled = currentQuestionIndex === questions.length - 1;
+  }
+
+  // 开始计时器
+  function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+          timeRemaining--;
+          updateTimerDisplay();
+
+          if (timeRemaining <= 0) {
+              clearInterval(timerInterval);
+              alert('考试时间到！系统将自动提交您的答案。');
+              submitExam();
+          }
+      }, 1000);
+  }
+
+  // 更新计时器显示
+  function updateTimerDisplay() {
+      const hours = Math.floor(timeRemaining / 3600);
+      const minutes = Math.floor((timeRemaining % 3600) / 60);
+      const seconds = timeRemaining % 60;
+
+      const timer = document.getElementById('timer');
+      timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      // 根据剩余时间改变样式
+      timer.className = 'timer';
+      if (timeRemaining <= 300) { // 5分钟
+          timer.className += ' danger';
+      } else if (timeRemaining <= 600) { // 10分钟
+          timer.className += ' warning';
+      }
+  }
+
+  // 显示提交确认对话框
+  function showSubmitModal() {
+      const modal = new bootstrap.Modal(document.getElementById('submitModal'));
+      modal.show();
+  }
+
+        // 提交考试
+        function submitExam() {
+            if (!sessionId) {
+                alert('考试会话ID不存在，无法提交考试');
+                return;
+            }
+
+            // 保存当前题目答案
+            saveCurrentAnswer();
+
+            // 显示提交状态
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>提交中...';
+            submitBtn.disabled = true;
+
+            // 创建表单并提交
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/student/exam/${sessionId}/submit`;
+
+            // 添加答案参数
+            Object.keys(answers).forEach(questionId => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = questionId;
+                input.value = answers[questionId] || '';
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // 获取题型名称
+        function getQuestionTypeName(type) {
+            const typeMap = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return typeMap[type] || '未知题型';
+        }
+
+        // 键盘快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // 防止在输入框中触发快捷键
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+                return;
+            }
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    previousQuestion();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    nextQuestion();
+                    break;
+                case 'Enter':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        showSubmitModal();
+                    }
+                    break;
+            }
+        });
+
+        // 页面离开前确认（仅在非提交状态下）
+        window.addEventListener('beforeunload', function(e) {
+            // 检查是否正在提交考试
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && submitBtn.disabled) {
+                // 正在提交，不显示警告
+                return;
+            }
+            
+            if (Object.keys(answers).length > 0) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的答案，确定要离开吗？';
+                return e.returnValue;
+            }
+        });
+
+        // 定期保存答案到服务器
+        setInterval(function() {
+            if (Object.keys(answers).length > 0) {
+                saveToServer();
+            }
+        }, 30000); // 每30秒保存一次
+
+        // 保存答案到服务器（批量发送）
+        function saveToServer() {
+            if (!sessionId) {
+                console.warn('SessionId不存在，无法保存答案');
+                return;
+            }
+
+            // 保存当前题目答案
+            saveCurrentAnswer();
+
+            const saveStatus = document.getElementById('saveStatus');
+
+            // 构建批量保存的请求体
+            const formData = new URLSearchParams();
+            let hasAnswers = false;
+            Object.keys(answers).forEach(questionId => {
+                const answer = answers[questionId];
+                if (answer && answer.trim() !== '') {
+                    formData.append('questionId', questionId);
+                    formData.append('answer', answer);
+                    hasAnswers = true;
+                }
+            });
+
+            if (!hasAnswers) return;
+
+            saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+            saveStatus.className = 'save-status saving';
+
+            fetch(`/student/exam/${sessionId}/save-batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    saveStatus.innerHTML = '<i class="fas fa-check me-1"></i>已保存';
+                    saveStatus.className = 'save-status saved';
+                } else {
+                    saveStatus.innerHTML = '<i class="fas fa-exclamation me-1"></i>保存失败';
+                    saveStatus.className = 'save-status saving';
+                }
+            })
+            .catch(error => {
+                console.error('保存答案失败:', error);
+                saveStatus.innerHTML = '<i class="fas fa-exclamation me-1"></i>保存失败';
+                saveStatus.className = 'save-status saving';
+            });
+        }
+
+        // 从服务器加载已保存的答案
+        function loadAnswersFromServer() {
+            if (!sessionId) return;
+
+            fetch(`/student/exam/${sessionId}/answers`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.answers) {
+                        // 合并服务器答案到本地
+                        Object.keys(data.answers).forEach(questionId => {
+                            if (!answers[questionId]) {
+                                answers[questionId] = data.answers[questionId];
+                            }
+                        });
+                        // 更新本地存储
+                        localStorage.setItem(`exam_answers_${sessionId}`, JSON.stringify(answers));
+                        updateQuestionListStyle();
+                        // 刷新当前显示的题目
+                        if (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
+                            displayQuestion(questions[currentQuestionIndex]);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('加载服务器答案失败:', error);
+                });
+        }
+
+        // 获取考试开始时间并计算剩余时间
+        function calculateTimeRemaining() {
+            const durationMinutes = paperDuration ? paperDuration : 120;
+
+            if (!startedAtStr || startedAtStr === '') {
+                return durationMinutes * 60;
+            }
+
+            try {
+                const startedAt = new Date(startedAtStr);
+                if (isNaN(startedAt.getTime())) {
+                    return durationMinutes * 60;
+                }
+                const now = new Date();
+                const elapsedSeconds = Math.floor((now - startedAt) / 1000);
+                const totalSeconds = durationMinutes * 60;
+                const remaining = totalSeconds - elapsedSeconds;
+
+                return Math.max(0, remaining);
+            } catch (e) {
+                return durationMinutes * 60;
+            }
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试卷预览 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'SimSun', '宋体', serif;
+            background-color: #f8f9fa;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .paper-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .paper-header {
+            text-align: center;
+            border-bottom: 3px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .paper-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .paper-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .paper-info strong {
+            color: #333;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin: 25px 0 15px 0;
+            padding-left: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .question-type-section {
+            margin-bottom: 30px;
+        }
+        
+        .question-type-header {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .question-type-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .question-type-info {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .question-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .question-id {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .question-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .question-content {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .code-block {
+            background-color: #f0f0f0;
+            border-left: 4px solid #667eea;
+            padding: 10px 15px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .code-block code {
+            display: block;
+            padding-left: 1em;
+        }
+        
+        .question-options {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+        
+        .question-option {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .option-item:hover {
+            background-color: #e9ecef;
+            border-color: #667eea;
+        }
+        
+        .option-label {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background-color: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .option-text {
+            flex: 1;
+            line-height: 1.6;
+            color: #333;
+            padding-top: 2px;
+        }
+        
+        .question-score {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 14px;
+        }
+        
+        .total-info {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
+            border: 2px solid #2196f3;
+        }
+        
+        .total-info h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .total-info p {
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .print-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        
+        .back-button {
+            background-color: #6c757d;
+            border: none;
+            color: white;
+        }
+        
+        @media print {
+            .navbar, .action-buttons {
+                display: none !important;
+            }
+            
+            .paper-container {
+                box-shadow: none;
+                border: 1px solid #333;
+            }
+            
+            body {
+                background-color: white;
+            }
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/teacher">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 教师端
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" onclick="window.close()">
+                    <i class="fas fa-times me-1"></i>关闭预览
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="paper-container">
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                <h5>正在加载试卷预览...</h5>
+            </div>
+            
+            <div id="paperContent" style="display: none;">
+                <!-- 试卷内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="btn print-button" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>打印试卷
+            </button>
+            <button class="btn back-button" onclick="window.close()">
+                <i class="fas fa-times me-2"></i>关闭预览
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后加载预览数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPreviewData();
+        });
+        
+        // 加载预览数据
+        function loadPreviewData() {
+            try {
+                const previewData = JSON.parse(sessionStorage.getItem('paperPreviewData'));
+                if (!previewData) {
+                    showError('未找到预览数据');
+                    return;
+                }
+                
+                renderPaper(previewData);
+                
+            } catch (error) {
+                console.error('加载预览数据失败:', error);
+                showError('加载预览数据失败');
+            }
+        }
+        
+        // 渲染试卷
+        function renderPaper(data) {
+            const paperContent = document.getElementById('paperContent');
+            const loading = document.getElementById('loading');
+            
+            // 隐藏加载提示
+            loading.style.display = 'none';
+            paperContent.style.display = 'block';
+            
+            // 生成试卷HTML
+            const html = generatePaperHTML(data);
+            paperContent.innerHTML = html;
+        }
+        
+        // 生成试卷HTML
+        function generatePaperHTML(data) {
+            const { paperName, subjectId, duration, difficultyLevel, questions, typeCounts, typeScores, totalScore, totalQuestions } = data;
+            
+            // 计算各题型的数量和分数
+            const choiceCount = typeCounts['C'] || 0;
+            const fillCount = typeCounts['F'] || 0;
+            const resultCount = typeCounts['R'] || 0;
+            const shortCount = typeCounts['S'] || 0;
+            const programCount = typeCounts['P'] || 0;
+            
+            const choiceScore = choiceCount > 0 ? typeScores['C'] / choiceCount : 0;
+            const fillScore = fillCount > 0 ? typeScores['F'] / fillCount : 0;
+            const resultScore = resultCount > 0 ? typeScores['R'] / resultCount : 0;
+            const shortScore = shortCount > 0 ? typeScores['S'] / shortCount : 0;
+            const programScore = programCount > 0 ? typeScores['P'] / programCount : 0;
+            
+            // 计算占比
+            const choicePercent = totalQuestions > 0 ? Math.round(choiceCount / totalQuestions * 100) : 0;
+            const fillPercent = totalQuestions > 0 ? Math.round(fillCount / totalQuestions * 100) : 0;
+            const resultPercent = totalQuestions > 0 ? Math.round(resultCount / totalQuestions * 100) : 0;
+            const shortPercent = totalQuestions > 0 ? Math.round(shortCount / totalQuestions * 100) : 0;
+            const programPercent = totalQuestions > 0 ? Math.round(programCount / totalQuestions * 100) : 0;
+            
+            // 按题型分组题目
+            const questionsByType = {
+                'C': questions.filter(q => q.questionType && q.questionType.startsWith('C')),
+                'F': questions.filter(q => q.questionType && q.questionType.startsWith('F')),
+                'R': questions.filter(q => q.questionType && q.questionType.startsWith('R')),
+                'S': questions.filter(q => q.questionType && q.questionType.startsWith('S')),
+                'P': questions.filter(q => q.questionType && q.questionType.startsWith('P'))
+            };
+            
+            // 生成题型分布HTML
+            const typeDistributionHTML = generateTypeDistributionHTML({
+                choiceCount, fillCount, resultCount, shortCount, programCount,
+                choicePercent, fillPercent, resultPercent, shortPercent, programPercent,
+                choiceScore, fillScore, resultScore, shortScore, programScore
+            });
+            
+            // 生成题目列表HTML
+            const questionsHTML = generateQuestionsHTML(questionsByType, {
+                choiceScore, fillScore, resultScore, shortScore, programScore
+            });
+            
+            return `
+                <!-- 试卷头部 -->
+                <div class="paper-header">
+                    <div class="paper-title">${paperName}</div>
+                    <div class="paper-info">
+                        <strong>科目：</strong><span>${subjectId}</span>
+                    </div>
+                    <div class="paper-info">
+                        <strong>总分：</strong><span>${totalScore}</span>分
+                        <span class="mx-3">|</span>
+                        <strong>考试时长：</strong><span>${duration}</span>分钟
+                        <span class="mx-3">|</span>
+                        <strong>难度：</strong><span>${getDifficultyName(difficultyLevel)}</span>
+                    </div>
+                </div>
+
+                <!-- 题型分布 (已移除) -->
+
+                <!-- 题目列表 -->
+                <div class="section-title">
+                    <i class="fas fa-list me-2"></i>题目列表
+                </div>
+                ${questionsHTML}
+
+                <!-- 总分信息 -->
+                <div class="total-info">
+                    <h4><i class="fas fa-calculator me-2"></i>试卷统计</h4>
+                    <p><strong>总题数：</strong><span>${totalQuestions}</span>道</p>
+                    <p><strong>总分：</strong><span>${totalScore}</span>分</p>
+                    <p><strong>考试时长：</strong><span>${duration}</span>分钟</p>
+                </div>
+            `;
+        }
+        
+        // 生成题型分布HTML
+        function generateTypeDistributionHTML(data) {
+            const { choiceCount, fillCount, resultCount, shortCount, programCount,
+                    choicePercent, fillPercent, resultPercent, shortPercent, programPercent,
+                    choiceScore, fillScore, resultScore, shortScore, programScore } = data;
+            
+            return `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="question-type-header">
+                            <div class="question-type-title">选择题</div>
+                            <div class="question-type-info">
+                                数量：<span>${choiceCount}</span>道 | 
+                                占比：<span>${choicePercent}</span>% | 
+                                每题：<span>${choiceScore.toFixed(1)}</span>分
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="question-type-header">
+                            <div class="question-type-title">填空题</div>
+                            <div class="question-type-info">
+                                数量：<span>${fillCount}</span>道 | 
+                                占比：<span>${fillPercent}</span>% | 
+                                每题：<span>${fillScore.toFixed(1)}</span>分
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="question-type-header">
+                            <div class="question-type-title">程序运行结果题</div>
+                            <div class="question-type-info">
+                                数量：<span>${resultCount}</span>道 | 
+                                占比：<span>${resultPercent}</span>% | 
+                                每题：<span>${resultScore.toFixed(1)}</span>分
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="question-type-header">
+                            <div class="question-type-title">简答题</div>
+                            <div class="question-type-info">
+                                数量：<span>${shortCount}</span>道 | 
+                                占比：<span>${shortPercent}</span>% | 
+                                每题：<span>${shortScore.toFixed(1)}</span>分
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="question-type-header">
+                            <div class="question-type-title">编程题</div>
+                            <div class="question-type-info">
+                                数量：<span>${programCount}</span>道 | 
+                                占比：<span>${programPercent}</span>% | 
+                                每题：<span>${programScore.toFixed(1)}</span>分
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 生成题目列表HTML
+        function generateQuestionsHTML(questionsByType, scores) {
+            let html = '';
+            let sectionIndex = 1;
+            
+            // 选择题
+            if (questionsByType['C'] && questionsByType['C'].length > 0) {
+                html += generateQuestionSectionHTML('C', '选择题', questionsByType['C'], scores.choiceScore, sectionIndex++);
+            }
+            
+            // 填空题
+            if (questionsByType['F'] && questionsByType['F'].length > 0) {
+                html += generateQuestionSectionHTML('F', '填空题', questionsByType['F'], scores.fillScore, sectionIndex++);
+            }
+            
+            // 程序运行结果题
+            if (questionsByType['R'] && questionsByType['R'].length > 0) {
+                html += generateQuestionSectionHTML('R', '程序运行结果题', questionsByType['R'], scores.resultScore, sectionIndex++);
+            }
+            
+            // 简答题
+            if (questionsByType['S'] && questionsByType['S'].length > 0) {
+                html += generateQuestionSectionHTML('S', '简答题', questionsByType['S'], scores.shortScore, sectionIndex++);
+            }
+            
+            // 编程题
+            if (questionsByType['P'] && questionsByType['P'].length > 0) {
+                html += generateQuestionSectionHTML('P', '编程题', questionsByType['P'], scores.programScore, sectionIndex++);
+            }
+            
+            return html;
+        }
+        
+        // 生成题目部分HTML
+        function generateQuestionSectionHTML(type, typeName, questions, score, sectionIndex) {
+            const sectionNames = ['一', '二', '三', '四', '五'];
+            const sectionName = sectionNames[sectionIndex - 1] || sectionIndex;
+            
+            let html = `
+                <div class="question-type-section">
+                    <div class="question-type-header">
+                        <div class="question-type-title">${sectionName}、${typeName}</div>
+                    </div>
+            `;
+            
+            questions.forEach((question, index) => {
+                html += `
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-id">${index + 1}. </span>
+                        </div>
+                        <div class="question-content ${type === 'R' || type === 'P' ? 'code-block' : ''}">${type === 'R' || type === 'P' ? '<code>' + question.content + '</code>' : question.content}</div>
+                        ${question.questionType === 'C' ? generateOptionsHTML(question) : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // 生成选项HTML
+        function generateOptionsHTML(question) {
+            if (!question || question.questionType !== 'C') return '';
+            
+            const options = [question.optionA, question.optionB, question.optionC, question.optionD].filter(opt => opt && opt.trim() !== '');
+            if (options.length === 0) return '';
+            
+            let html = '<div class="question-options">';
+            
+            options.forEach((option, index) => {
+                const optionLabel = String.fromCharCode(65 + index); // A, B, C, D...
+                html += `<div class="question-option">
+                    <div class="option-item">
+                        <span class="option-label">${optionLabel}</span>
+                        <span class="option-text">${option}</span>
+                    </div>
+                </div>`;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // 获取题目类型名称
+        function getQuestionTypeName(type) {
+            const typeNames = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return typeNames[type] || '未知类型';
+        }
+        
+        // 获取难度名称
+        function getDifficultyName(difficulty) {
+            if (difficulty < 2.0) return '简单';
+            if (difficulty < 4.0) return '中等';
+            return '困难';
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const loading = document.getElementById('loading');
+            loading.innerHTML = `
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5 class="text-danger">${message}</h5>
+                <button class="btn btn-primary mt-3" onclick="window.close()">关闭</button>
+            `;
+        }
+    </script>
+</body>
+</html>

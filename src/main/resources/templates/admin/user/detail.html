@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户详情 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .info-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #6c757d;
+        }
+        
+        .status-active {
+            color: #28a745;
+        }
+        
+        .status-inactive {
+            color: #dc3545;
+        }
+        
+        .role-admin {
+            background-color: #dc3545;
+        }
+        
+        .role-teacher {
+            background-color: #007bff;
+        }
+        
+        .role-student {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 管理员面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${admin.username}">用户名</span>
+                    (管理员)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">管理功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/users">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/subjects">
+                                <i class="fas fa-book me-2"></i>科目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/exams">
+                                <i class="fas fa-file-alt me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/statistics">
+                                <i class="fas fa-chart-bar me-2"></i>系统统计
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-user me-2"></i>用户详情</h2>
+                    <div>
+                        <a th:href="@{/admin/users}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>返回列表
+                        </a>
+                        <a th:href="@{/admin/users/{id}/edit(id=${user.userId})}" class="btn btn-primary">
+                            <i class="fas fa-edit me-1"></i>编辑用户
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 用户基本信息 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>基本信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item d-flex">
+                                    <span class="info-label">用户ID：</span>
+                                    <span class="info-value" th:text="${user.userId}">USER001</span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">用户名：</span>
+                                    <span class="info-value" th:text="${user.username}">username</span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">角色：</span>
+                                    <span class="info-value">
+                                        <span class="badge" 
+                                              th:classappend="${user.role == 'admin'} ? 'role-admin' : (${user.role == 'teacher'} ? 'role-teacher' : 'role-student')"
+                                              th:text="${user.role == 'admin'} ? '管理员' : (${user.role == 'teacher'} ? '教师' : '学生')">
+                                            角色
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">状态：</span>
+                                    <span class="info-value">
+                                        <span th:class="${user.isActive} ? 'status-active' : 'status-inactive'">
+                                            <i th:class="${user.isActive} ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                                            <span th:text="${user.isActive} ? '启用' : '禁用'">状态</span>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item d-flex">
+                                    <span class="info-label">邮箱：</span>
+                                    <span class="info-value" th:text="${user.email}">user@example.com</span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">手机号：</span>
+                                    <span class="info-value" th:text="${user.phone}">13800138000</span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">部门：</span>
+                                    <span class="info-value" th:text="${user.department}">计算机学院</span>
+                                </div>
+                                <div class="info-item d-flex">
+                                    <span class="info-label">头像：</span>
+                                    <span class="info-value">
+                                        <img th:if="${user.avatar}" th:src="${user.avatar}" 
+                                             class="rounded-circle" width="40" height="40" alt="头像">
+                                        <span th:unless="${user.avatar}" class="text-muted">未设置</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时间信息 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>时间信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item d-flex">
+                                    <span class="info-label">创建时间：</span>
+                                    <span class="info-value" th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 10:00:00</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item d-flex">
+                                    <span class="info-label">更新时间：</span>
+                                    <span class="info-value" th:text="${#temporals.format(user.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 10:00:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>操作
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-warning" 
+                                    th:data-user-id="${user.userId}"
+                                    th:data-is-active="${user.isActive}"
+                                    onclick="toggleStatus(this.dataset.userId, this.dataset.isActive)">
+                                <i th:class="${user.isActive} ? 'fas fa-ban' : 'fas fa-check'"></i>
+                                <span th:text="${user.isActive} ? '禁用用户' : '启用用户'">切换状态</span>
+                            </button>
+                            <button class="btn btn-danger" 
+                                    th:data-user-id="${user.userId}"
+                                    onclick="deleteUser(this.dataset.userId)"
+                                    th:disabled="${user.role == 'admin'}">
+                                <i class="fas fa-trash"></i>删除用户
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 切换用户状态
+        function toggleStatus(userId, currentStatus) {
+            const newStatus = !currentStatus;
+            const action = newStatus ? '启用' : '禁用';
+            
+            if (confirm(`确定要${action}该用户吗？`)) {
+                fetch(`/admin/users/${userId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `isActive=${newStatus}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('操作失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请重试');
+                });
+            }
+        }
+
+        // 删除用户
+        function deleteUser(userId) {
+            if (confirm('确定要删除该用户吗？此操作不可恢复！')) {
+                fetch(`/admin/users/${userId}/delete`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '/admin/users';
+                    } else {
+                        alert('删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除失败，请重试');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

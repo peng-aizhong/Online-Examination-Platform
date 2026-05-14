@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩详情 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .grade-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .question-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .student-answer {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .correct-answer {
+            background-color: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .question-number {
+            background: #007bff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .question-type-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        
+        .difficulty-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        
+        .score-display {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .score-excellent {
+            color: #28a745;
+        }
+        
+        .score-good {
+            color: #17a2b8;
+        }
+        
+        .score-pass {
+            color: #ffc107;
+        }
+        
+        .score-fail {
+            color: #dc3545;
+        }
+        
+        /* 程序运行结果题和编程题的题目内容锯齿状边框样式 */
+        .program-question-content {
+            position: relative;
+            margin: 10px 0;
+        }
+        
+        /* 编程题答案的锯齿状边框样式 */
+        .program-answer-content {
+            position: relative;
+            margin: 10px 0;
+        }
+        
+        .program-question-content pre,
+        .program-answer-content pre {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 0;
+            font-family: 'Courier New', Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/teacher">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 教师面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${user.username}">用户名</span>
+                    (<span th:text="${#strings.equals(user.role, 'admin') ? '管理员' : (#strings.equals(user.role, 'teacher') ? '教师' : (#strings.equals(user.role, 'student') ? '学生' : user.role))}">角色</span>)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">教师功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/questions">
+                                <i class="fas fa-question-circle me-2"></i>题目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/papers">
+                                <i class="fas fa-file-alt me-2"></i>试卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/exams">
+                                <i class="fas fa-list me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/grading">
+                                <i class="fas fa-check-double me-2"></i>阅卷管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/teacher/grades">
+                                <i class="fas fa-chart-line me-2"></i>成绩查询
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/resources">
+                                <i class="fas fa-book me-2"></i>学习资源
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/teacher/profile">
+                                <i class="fas fa-cog me-2"></i>个人设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 顶部操作栏 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2><i class="fas fa-chart-line me-2"></i>成绩详情</h2>
+                                <p class="text-muted">查看学生详细考试成绩</p>
+                            </div>
+                            <div>
+                                <a href="/teacher/grades" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>返回成绩查询
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 考试会话信息 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="grade-card">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h4 th:text="${examSession.student.username} + ' - ' + ${paper.paperName}">学生姓名 - 试卷名称</h4>
+                                    <p class="text-muted mb-2" th:text="${examSession.student.email}">学生邮箱</p>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            开始时间: <span th:text="${#temporals.format(examSession.startedAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 14:00</span>
+                                        </span>
+                                        <span class="badge bg-success" th:if="${examSession.submittedAt != null}">
+                                            <i class="fas fa-clock me-1"></i>
+                                            提交时间: <span th:text="${#temporals.format(examSession.submittedAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 16:30</span>
+                                        </span>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-star me-1"></i>
+                                            总分: <span th:text="${paper.totalScore}">100</span>分
+                                        </span>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-check me-1"></i>
+                                            状态: <span th:text="${examSession.statusDisplayName}">已阅卷</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="d-flex flex-column align-items-end">
+                                        <h5 class="mb-1">最终得分</h5>
+                                        <h3 class="mb-0" 
+                                            th:class="'mb-0' + (${examSession.totalScore != null and examSession.totalScore >= 90} ? ' score-excellent' : '') + (${examSession.totalScore != null and examSession.totalScore >= 80 and examSession.totalScore < 90} ? ' score-good' : '') + (${examSession.totalScore != null and examSession.totalScore >= 60 and examSession.totalScore < 80} ? ' score-pass' : '') + (${examSession.totalScore != null and examSession.totalScore < 60} ? ' score-fail' : '')"
+                                            th:text="${examSession.totalScore != null ? examSession.totalScore : 0}">0</h3>
+                                        <small class="text-muted" th:text="${examSession.status.name() == 'submitted' ? '已提交' : '已阅卷'}">已阅卷</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 题目详情 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="grade-card">
+                            <h5 class="mb-3">
+                                <i class="fas fa-list me-2"></i>题目详情
+                            </h5>
+                            
+                            <div th:if="${answers == null or answers.isEmpty()}" class="text-center py-5">
+                                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无题目数据</h5>
+                                <p class="text-muted">当前没有题目信息</p>
+                            </div>
+                            
+                            <div th:if="${answers != null and !answers.isEmpty()}">
+                                <div th:each="answer, iterStat : ${answers}" class="question-item">
+                                    <div class="d-flex align-items-start">
+                                        <div class="question-number" th:text="${iterStat.index + 1}">1</div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <span class="badge bg-primary question-type-badge me-2" th:text="${answer.getQuestionTypeDisplayName()}">题型</span>
+                                                    <span class="badge bg-warning difficulty-badge" th:text="${answer.question.difficulty}">难度</span>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="score-display" 
+                                                          th:class="'score-display' + (${answer.score != null and answer.score >= 8} ? ' score-excellent' : '') + (${answer.score != null and answer.score >= 6 and answer.score < 8} ? ' score-good' : '') + (${answer.score != null and answer.score >= 4 and answer.score < 6} ? ' score-pass' : '') + (${answer.score != null and answer.score < 4} ? ' score-fail' : '')"
+                                                          th:text="${answer.score != null ? answer.score : 0} + '分'">0分</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="question-content mb-3">
+                                                <h6>题目内容:</h6>
+                                                <div th:if="${answer.question.questionType == 'R' or answer.question.questionType == 'P'}" class="program-question-content">
+                                                    <pre th:text="${answer.question.content}">题目内容</pre>
+                                                </div>
+                                                <p th:unless="${answer.question.questionType == 'R' or answer.question.questionType == 'P'}" th:text="${answer.question.content}">题目内容</p>
+                                                
+                                                <!-- 选择题选项显示 -->
+                                                <div th:if="${answer.question.questionType == 'C'}" class="options-list mb-3">
+                                                    <div th:if="${answer.question.optionA != null and !#strings.isEmpty(answer.question.optionA)}" class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '1'}">
+                                                        <label class="form-check-label">A. <span th:text="${answer.question.optionA}">选项A</span></label>
+                                                    </div>
+                                                    <div th:if="${answer.question.optionB != null and !#strings.isEmpty(answer.question.optionB)}" class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '2'}">
+                                                        <label class="form-check-label">B. <span th:text="${answer.question.optionB}">选项B</span></label>
+                                                    </div>
+                                                    <div th:if="${answer.question.optionC != null and !#strings.isEmpty(answer.question.optionC)}" class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '3'}">
+                                                        <label class="form-check-label">C. <span th:text="${answer.question.optionC}">选项C</span></label>
+                                                    </div>
+                                                    <div th:if="${answer.question.optionD != null and !#strings.isEmpty(answer.question.optionD)}" class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '4'}">
+                                                        <label class="form-check-label">D. <span th:text="${answer.question.optionD}">选项D</span></label>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 判断题选项显示 -->
+                                                <div th:if="${answer.question.questionType == 'T'}" class="options-list mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '正确'}">
+                                                        <label class="form-check-label">正确</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" disabled th:checked="${answer.answerText == '错误'}">
+                                                        <label class="form-check-label">错误</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="student-answer">
+                                                <h6>学生答案:</h6>
+                                                <div th:if="${answer.question.questionType == 'P'}" class="program-answer-content">
+                                                    <pre th:text="${answer.answerText != null ? answer.answerText : '未作答'}">学生答案</pre>
+                                                </div>
+                                                <p th:unless="${answer.question.questionType == 'P'}" class="mb-0" th:text="${answer.answerText != null ? answer.answerText : '未作答'}">学生答案</p>
+                                            </div>
+                                            
+                                            <div class="correct-answer">
+                                                <h6>参考答案:</h6>
+                                                <div th:if="${answer.question.questionType == 'P'}" class="program-answer-content">
+                                                    <pre th:text="${answer.question.answer != null ? answer.question.answer : '无标准答案'}">参考答案</pre>
+                                                </div>
+                                                <p th:unless="${answer.question.questionType == 'P'}" class="mb-0" th:text="${answer.question.answer != null ? answer.question.answer : '无标准答案'}">参考答案</p>
+                                            </div>
+                                            
+                                            <div class="mt-3" th:if="${answer.feedback != null and !#strings.isEmpty(answer.feedback)}">
+                                                <h6>教师评语:</h6>
+                                                <div class="alert alert-info">
+                                                    <p class="mb-0" th:text="${answer.feedback}">教师评语</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安排考试 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .schedule-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .student-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .student-item {
+            padding: 10px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .student-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .student-item.selected {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- 顶部操作栏 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-calendar-plus me-2"></i>安排考试</h2>
+                        <p class="text-muted">为您的试卷安排考试时间和参与学生</p>
+                    </div>
+                    <div>
+                        <a href="/teacher/exams" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回考试管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="schedule-card">
+                    <!-- 成功/错误消息提示 -->
+                    <div th:if="${success}" class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${success}">操作成功</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${error}">操作失败</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    
+                    <div th:if="${warning}" class="alert alert-warning alert-dismissible fade show m-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span th:text="${warning}">警告信息</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    
+                    <form method="post" action="/teacher/exams/schedule">
+                        <!-- 试卷选择 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">选择试卷</label>
+                                <select name="paperId" class="form-select" required>
+                                    <option value="">请选择试卷</option>
+                                    <option th:each="paper : ${papers}" 
+                                            th:value="${paper.paperId}" 
+                                            th:selected="${paper.paperId == selectedPaperId}"
+                                            th:text="${paper.paperName + ' (' + paper.subject.subjectName + ')'}">
+                                        试卷名称
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">考试时长（分钟）</label>
+                                <input type="number" name="duration" class="form-control" 
+                                       th:value="${selectedPaper != null ? selectedPaper.duration : 120}" 
+                                       min="30" max="300" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">最大尝试次数</label>
+                                <input type="number" name="maxAttempts" class="form-control" 
+                                       value="1" min="1" max="10" required>
+                                <small class="text-muted">学生最多可以参加几次考试</small>
+                            </div>
+                        </div>
+
+                        <!-- 考试时间区间 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">考试开始时间</label>
+                                <input type="datetime-local" name="examStartTime" class="form-control" required>
+                                <small class="text-muted">学生可以开始考试的最早时间</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">考试结束时间</label>
+                                <div class="input-group">
+                                    <input type="datetime-local" name="examEndTime" class="form-control" required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="calculateEndTime()" title="根据开始时间和时长自动计算">
+                                        <i class="fas fa-calculator"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">学生必须完成考试的最晚时间</small>
+                            </div>
+                        </div>
+
+                        <!-- 学生选择 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">按部门筛选学生</label>
+                                        <select class="form-select" id="departmentFilter" onchange="filterStudentsByDepartment()">
+                                            <option value="all" th:selected="${selectedDepartment == null or selectedDepartment == 'all'}">所有部门</option>
+                                            <option th:each="dept : ${departments}" 
+                                                    th:value="${dept}" 
+                                                    th:selected="${dept == selectedDepartment}"
+                                                    th:text="${dept}">部门名称</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <div class="text-muted">
+                                            <small>当前显示: <span id="studentCount" th:text="${#lists.size(students)}">0</span> 名学生</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <label class="form-label">选择参与学生</label>
+                                <div class="student-list">
+                                    <div th:if="${#lists.isEmpty(students)}" class="text-center py-3">
+                                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">暂无学生数据</p>
+                                    </div>
+                                    <div th:each="student : ${students}" class="student-item" 
+                                         th:data-user-id="${student.userId}" 
+                                         th:data-department="${student.department}"
+                                         onclick="toggleStudent(this.dataset.userId)">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   th:name="studentIds" th:value="${student.userId}" 
+                                                   th:id="'student-' + ${student.userId}">
+                                            <label class="form-check-label" th:for="'student-' + ${student.userId}">
+                                                <strong th:text="${student.username}">学生姓名</strong>
+                                                <span class="text-muted ms-2" th:text="${student.email}">邮箱</span>
+                                                <span class="badge bg-secondary ms-2" th:text="${student.department}">部门</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <div class="row">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="selectAllStudents()">
+                                    <i class="fas fa-check-double me-1"></i>全选
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="deselectAllStudents()">
+                                    <i class="fas fa-times me-1"></i>取消全选
+                                </button>
+                                <button type="submit" class="btn btn-primary" onclick="return validateForm()">
+                                    <i class="fas fa-calendar-check me-1"></i>安排考试
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 自动计算结束时间（辅助功能）
+        function calculateEndTime() {
+            const startTimeInput = document.querySelector('input[name="examStartTime"]');
+            const durationInput = document.querySelector('input[name="duration"]');
+            const endTimeInput = document.querySelector('input[name="examEndTime"]');
+            
+            if (startTimeInput.value && durationInput.value) {
+                // 直接使用输入值，避免时区问题
+                const startTimeStr = startTimeInput.value;
+                const duration = parseInt(durationInput.value) || 120;
+                
+                // 解析开始时间
+                const startDate = new Date(startTimeStr + ':00'); // 添加秒数
+                const endDate = new Date(startDate.getTime() + duration * 60000);
+                
+                // 格式化为 datetime-local 格式
+                const year = endDate.getFullYear();
+                const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                const day = String(endDate.getDate()).padStart(2, '0');
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                
+                const endTimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+                endTimeInput.value = endTimeStr;
+                
+                console.log('时间区间计算:', {
+                    examStartTime: startTimeStr,
+                    examDuration: duration,
+                    examEndTime: endTimeStr,
+                    note: '学生可以在这个时间段内开始考试'
+                });
+            }
+        }
+        
+        // 监听开始时间变化
+        document.querySelector('input[name="examStartTime"]').addEventListener('change', calculateEndTime);
+        
+        // 监听考试时长变化
+        document.querySelector('input[name="duration"]').addEventListener('change', calculateEndTime);
+        
+        // 测试时间计算函数
+        function testTimeCalculation() {
+            console.log('=== 时间计算测试 ===');
+            
+            // 测试案例1：2025-09-02 10:46 + 120分钟
+            const testStart = '2025-09-02T10:46';
+            const testDuration = 120;
+            
+            const startDate = new Date(testStart + ':00');
+            const endDate = new Date(startDate.getTime() + testDuration * 60000);
+            
+            const year = endDate.getFullYear();
+            const month = String(endDate.getMonth() + 1).padStart(2, '0');
+            const day = String(endDate.getDate()).padStart(2, '0');
+            const hours = String(endDate.getHours()).padStart(2, '0');
+            const minutes = String(endDate.getMinutes()).padStart(2, '0');
+            
+            const result = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            console.log('测试案例1:');
+            console.log('开始时间:', testStart);
+            console.log('时长:', testDuration, '分钟');
+            console.log('计算结果:', result);
+            console.log('期望结果: 2025-09-02T12:46');
+            console.log('是否正确:', result === '2025-09-02T12:46');
+        }
+        
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            testTimeCalculation();
+        });
+        
+        // 添加一个"自动计算"按钮
+        function autoCalculateEndTime() {
+            const startTimeInput = document.querySelector('input[name="examTime"]');
+            const durationInput = document.querySelector('input[name="duration"]');
+            const endTimeInput = document.querySelector('input[name="examEndTime"]');
+            
+            if (startTimeInput.value && durationInput.value) {
+                const startTime = new Date(startTimeInput.value);
+                const duration = parseInt(durationInput.value) || 120;
+                const endTime = new Date(startTime.getTime() + duration * 60000);
+                endTimeInput.value = endTime.toISOString().slice(0, 16);
+            } else {
+                alert('请先设置考试开始时间和时长');
+            }
+        }
+        
+        // 表单验证
+        function validateForm() {
+            const paperId = document.querySelector('select[name="paperId"]').value;
+            const examStartTime = document.querySelector('input[name="examStartTime"]').value;
+            const examEndTime = document.querySelector('input[name="examEndTime"]').value;
+            const duration = document.querySelector('input[name="duration"]').value;
+            const maxAttempts = document.querySelector('input[name="maxAttempts"]').value;
+            const selectedStudents = document.querySelectorAll('input[name="studentIds"]:checked');
+            
+            console.log('=== 表单提交验证 ===');
+            console.log('试卷ID:', paperId);
+            console.log('考试开始时间:', examStartTime);
+            console.log('考试结束时间:', examEndTime);
+            console.log('考试时长:', duration);
+            console.log('最大尝试次数:', maxAttempts);
+            console.log('选中的学生数量:', selectedStudents.length);
+            
+            if (!paperId) {
+                alert('请选择试卷');
+                return false;
+            }
+            
+            if (!examStartTime) {
+                alert('请设置考试开始时间');
+                return false;
+            }
+            
+            // 如果结束时间字段为空，自动计算
+            if (!examEndTime && examStartTime && duration) {
+                const startDate = new Date(examStartTime + ':00');
+                const endDate = new Date(startDate.getTime() + parseInt(duration) * 60000);
+                
+                // 格式化为 datetime-local 格式
+                const year = endDate.getFullYear();
+                const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                const day = String(endDate.getDate()).padStart(2, '0');
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                
+                const endTimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+                document.querySelector('input[name="examEndTime"]').value = endTimeStr;
+                examEndTime = endTimeStr;
+            }
+            
+            if (!examEndTime) {
+                alert('请设置考试结束时间');
+                return false;
+            }
+            
+            if (!duration || duration < 30) {
+                alert('考试时长不能少于30分钟');
+                return false;
+            }
+            
+            if (!maxAttempts || maxAttempts < 1 || maxAttempts > 10) {
+                alert('最大尝试次数必须在1-10之间');
+                return false;
+            }
+            
+            // 验证结束时间必须晚于开始时间
+            if (examStartTime && examEndTime) {
+                const startTime = new Date(examStartTime);
+                const endTime = new Date(examEndTime);
+                
+                if (endTime <= startTime) {
+                    alert('考试结束时间必须晚于开始时间');
+                    return false;
+                }
+                
+                // 验证时间区间是否足够长（至少要比考试时长长一些）
+                const timeWindow = (endTime - startTime) / (1000 * 60); // 转换为分钟
+                const examDuration = parseInt(duration);
+                
+                if (timeWindow < examDuration) {
+                    alert(`考试时间区间（${Math.round(timeWindow)}分钟）不能短于考试时长（${examDuration}分钟）`);
+                    return false;
+                }
+                
+                // 建议时间区间应该比考试时长长一些
+                if (timeWindow < examDuration + 30) {
+                    if (!confirm(`考试时间区间（${Math.round(timeWindow)}分钟）仅比考试时长（${examDuration}分钟）长${Math.round(timeWindow - examDuration)}分钟，建议至少预留30分钟缓冲时间，是否继续？`)) {
+                        return false;
+                    }
+                }
+            }
+            
+            if (selectedStudents.length === 0) {
+                alert('请至少选择一名学生');
+                return false;
+            }
+            
+            console.log('表单验证通过，准备提交');
+            console.log('最终提交的数据:');
+            console.log('- 试卷ID:', paperId);
+            console.log('- 考试开始时间:', examStartTime);
+            console.log('- 考试结束时间:', examEndTime);
+            console.log('- 考试时长:', duration);
+            console.log('- 最大尝试次数:', maxAttempts);
+            console.log('- 学生数量:', selectedStudents.length);
+            
+            // 显示提交确认
+            let confirmMessage = `确定要为 ${selectedStudents.length} 名学生安排考试吗？\n考试时间区间：${examStartTime} 到 ${examEndTime}\n学生可以在这个时间段内开始考试`;
+            if (maxAttempts > 1) {
+                confirmMessage += `\n每位学生最多可尝试 ${maxAttempts} 次，系统将记录最高分`;
+            }
+            if (confirm(confirmMessage)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        // 切换学生选择
+        function toggleStudent(studentId) {
+            const checkbox = document.getElementById('student-' + studentId);
+            checkbox.checked = !checkbox.checked;
+            updateStudentItemStyle(studentId, checkbox.checked);
+        }
+
+        // 更新学生项样式
+        function updateStudentItemStyle(studentId, selected) {
+            const studentItem = document.querySelector(`[data-user-id="${studentId}"]`);
+            if (selected) {
+                studentItem.classList.add('selected');
+            } else {
+                studentItem.classList.remove('selected');
+            }
+        }
+
+        // 全选学生
+        function selectAllStudents() {
+            const checkboxes = document.querySelectorAll('input[name="studentIds"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                updateStudentItemStyle(checkbox.value, true);
+            });
+        }
+
+        // 取消全选学生
+        function deselectAllStudents() {
+            const checkboxes = document.querySelectorAll('input[name="studentIds"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                updateStudentItemStyle(checkbox.value, false);
+            });
+        }
+
+        // 按部门筛选学生
+        function filterStudentsByDepartment() {
+            const selectedDepartment = document.getElementById('departmentFilter').value;
+            const studentItems = document.querySelectorAll('.student-item');
+            let visibleCount = 0;
+            
+            studentItems.forEach(item => {
+                const studentDepartment = item.dataset.department;
+                if (selectedDepartment === 'all' || studentDepartment === selectedDepartment) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                    // 隐藏时取消选中状态
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox && checkbox.checked) {
+                        checkbox.checked = false;
+                        updateStudentItemStyle(checkbox.value, false);
+                    }
+                }
+            });
+            
+            // 更新学生数量显示
+            document.getElementById('studentCount').textContent = visibleCount;
+            
+            // 如果没有可见的学生，显示提示
+            const noStudentsDiv = document.querySelector('.student-list .text-center');
+            if (visibleCount === 0 && noStudentsDiv) {
+                noStudentsDiv.style.display = 'block';
+            } else if (noStudentsDiv) {
+                noStudentsDiv.style.display = 'none';
+            }
+        }
+        
+        // 初始化学生项样式
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[name="studentIds"]');
+            checkboxes.forEach(checkbox => {
+                updateStudentItemStyle(checkbox.value, checkbox.checked);
+            });
+            
+            // 初始化部门筛选
+            filterStudentsByDepartment();
+        });
+    </script>
+</body>
+</html> 

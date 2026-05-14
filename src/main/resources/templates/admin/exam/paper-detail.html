@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试卷详情 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #6c757d;
+            text-align: right;
+        }
+        
+        .status-active {
+            color: #28a745;
+        }
+        
+        .status-inactive {
+            color: #dc3545;
+        }
+        
+        .badge {
+            font-size: 0.875em;
+            padding: 0.5em 0.75em;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 管理员面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${admin.username}">用户名</span>
+                    (管理员)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">管理功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/subjects">
+                                <i class="fas fa-book me-2"></i>科目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/exams">
+                                <i class="fas fa-file-alt me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/statistics">
+                                <i class="fas fa-chart-bar me-2"></i>系统统计
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-file-alt me-2"></i>试卷详情</h2>
+                    <div>
+                        <a href="/admin/exams/papers" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i>返回列表
+                        </a>
+                        <a th:href="@{/admin/exams/papers/{id}/edit(id=${paper.paperId})}" class="btn btn-primary">
+                            <i class="fas fa-edit me-1"></i>编辑试卷
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 试卷信息卡片 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>基本信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-item">
+                            <span class="info-label">试卷ID</span>
+                            <span class="info-value" th:text="${paper.paperId}">PAPER001</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">试卷名称</span>
+                            <span class="info-value" th:text="${paper.paperName}">试卷标题</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">所属科目</span>
+                            <span class="info-value" th:text="${paper.subject.subjectName}">科目名称</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">创建者</span>
+                            <span class="info-value" th:text="${paper.creator.username}">创建者</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">状态</span>
+                            <span class="info-value">
+                                <span th:class="${paper.status == '启用'} ? 'status-active' : 'status-inactive'">
+                                    <i th:if="${paper.status == '启用'}" class="fas fa-check-circle"></i>
+                                    <i th:if="${paper.status == '禁用'}" class="fas fa-times-circle"></i>
+                                    <i th:if="${paper.status != '启用' and paper.status != '禁用'}" class="fas fa-archive"></i>
+                                    <span th:text="${paper.status}">状态</span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">创建时间</span>
+                            <span class="info-value" th:text="${#temporals.format(paper.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 10:00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">更新时间</span>
+                            <span class="info-value" th:text="${#temporals.format(paper.updatedAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 10:00</span>
+                        </div>
+                        <div class="info-item" th:if="${paper.description != null and !paper.description.isEmpty()}">
+                            <span class="info-label">描述</span>
+                            <span class="info-value" th:text="${paper.description}">试卷描述</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计信息卡片 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>统计信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-primary" th:text="${paper.questionCount}">0</h3>
+                                    <p class="text-muted mb-0">题目数量</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-success" th:text="${paper.totalScore}">0</h3>
+                                    <p class="text-muted mb-0">总分</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-info" th:text="${paper.duration}">0</h3>
+                                    <p class="text-muted mb-0">时间限制(分钟)</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-warning" th:text="${paper.passingScore}">0</h3>
+                                    <p class="text-muted mb-0">及格分数</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>操作
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-warning" 
+                                    th:data-paper-id="${paper.paperId}"
+                                    th:data-status="${paper.status}"
+                                    onclick="togglePaperStatus(this.dataset.paperId, this.dataset.status)">
+                                <i class="fas fa-toggle-on me-1"></i>
+                                <span th:text="${paper.status == '启用'} ? '禁用试卷' : '启用试卷'">切换状态</span>
+                            </button>
+                            <button class="btn btn-danger" 
+                                    th:data-paper-id="${paper.paperId}"
+                                    onclick="deletePaper(this.dataset.paperId)">
+                                <i class="fas fa-trash me-1"></i>删除试卷
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 切换试卷状态
+        function togglePaperStatus(paperId, status) {
+            const action = status === '启用' ? '禁用' : '启用';
+            if (confirm(`确定要${action}该试卷吗？`)) {
+                const newStatus = status === '启用' ? '禁用' : '启用';
+                
+                fetch(`/admin/exams/papers/${paperId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `status=${newStatus}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('操作失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请重试');
+                });
+            }
+        }
+
+        // 删除试卷
+        function deletePaper(paperId) {
+            if (confirm('确定要删除该试卷吗？此操作不可恢复！')) {
+                fetch(`/admin/exams/papers/${paperId}/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '/admin/exams/papers';
+                    } else {
+                        alert('删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除失败，请重试');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

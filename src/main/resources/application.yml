@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  tomcat:
+    # 大文件上传配置
+    max-http-post-size: 53687091200  # 50GB in bytes (50 * 1024 * 1024 * 1024)
+    max-connections: 8192         # 最大连接数
+    accept-count: 100             # 等待队列长度
+    threads:
+      max: 200                    # 最大线程数
+      min-spare: 10               # 最小空闲线程数
+
+spring:
+  application:
+    name: exam-system
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/exam_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autocommit=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        globally_quoted_identifiers: true
+        globally_quoted_identifiers_skip_column_definitions: true
+        hbm2ddl:
+          auto: none
+        jdbc:
+          time_zone: UTC
+        connection:
+          provider_disables_autocommit: false
+        transaction:
+          auto_commit: true
+    open-in-view: false
+  transaction:
+    rollback-on-commit-failure: false
+  
+  thymeleaf:
+    cache: false
+    mode: HTML
+    encoding: UTF-8
+    servlet:
+      content-type: text/html
+  
+  # 静态资源配置
+  web:
+    resources:
+      static-locations: classpath:/static/
+      add-mappings: true
+  
+  # 禁用Spring Security的默认用户生成
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 50GB          # 单个文件最大50GB
+      max-request-size: 50GB       # 整个请求最大50GB
+      enabled: true                # 启用multipart支持
+      file-size-threshold: 2KB     # 文件写入磁盘的阈值
+      location: ${java.io.tmpdir}  # 临时文件存储位置
+  
+  # 会话配置
+  session:
+    store-type: none               # 使用内存存储会话
+    timeout: 7200                  # 会话超时时间（秒）- 2小时
+    cookie:
+      name: JSESSIONID
+      http-only: true
+      secure: false
+      max-age: 7200
+  
+  # DevTools 配置
+  devtools:
+    restart:
+      enabled: true
+      # 减少重启日志输出
+      log-condition-evaluation-delta: false
+    livereload:
+      enabled: false
+
+logging:
+  level:
+    com.exam: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # 减少 DevTools 相关日志
+    org.springframework.boot.devtools: WARN
+    org.springframework.boot.devtools.restart: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n" 

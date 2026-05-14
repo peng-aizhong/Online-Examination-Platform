@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加题目 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .question-form {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .question-type-options {
+            display: none;
+        }
+        
+        .question-type-options.active {
+            display: block;
+        }
+        
+        .option-item {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+        
+        .option-item:hover {
+            background: #e9ecef;
+        }
+        
+        .add-option-btn {
+            margin-top: 10px;
+        }
+        
+        .remove-option-btn {
+            float: right;
+            color: #dc3545;
+            cursor: pointer;
+        }
+        
+        .preview-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .preview-content {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-plus-circle me-2"></i>添加题目</h2>
+                        <p class="text-muted">创建新的题目，支持5种题型</p>
+                    </div>
+                    <div>
+                        <a href="/teacher/questions" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回题库
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 消息提示 -->
+        <div class="row mb-3" th:if="${success != null or error != null}">
+            <div class="col-12">
+                <div class="alert alert-success alert-dismissible fade show" th:if="${success != null}">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div class="alert alert-danger alert-dismissible fade show" th:if="${error != null}">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- 题目表单 -->
+                <form th:action="@{/teacher/questions}" method="post" id="questionForm">
+                    <div class="question-form">
+                        <!-- 基本信息 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-info-circle me-2"></i>基本信息
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">科目 <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="subjectId" required>
+                                            <option value="">请选择科目</option>
+                                            <option th:each="subject : ${subjects}" 
+                                                    th:value="${subject.subjectId}" 
+                                                    th:text="${subject.subjectName}">科目名称</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">题目类型 <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="questionType" name="questionType" required>
+                                            <option value="">请选择题型</option>
+                                            <option value="C">选择题 (C)</option>
+                                            <option value="F">填空题 (F)</option>
+                                            <option value="R">程序运行结果题 (R)</option>
+                                            <option value="S">简答题 (S)</option>
+                                            <option value="P">编程题 (P)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">难度级别 <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="difficulty" required>
+                                            <option value="">请选择难度</option>
+                                            <option value="easy">简单</option>
+                                            <option value="medium">中等</option>
+                                            <option value="hard">困难</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">知识点标签</label>
+                                        <input type="text" class="form-control" name="knowledgeTag" 
+                                               placeholder="输入知识点标签，多个标签用逗号分隔">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 题目内容 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-edit me-2"></i>题目内容
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">题目内容 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="content" rows="6" 
+                                          placeholder="请输入题目内容..." required 
+                                          style="font-family: 'Courier New', monospace; white-space: pre-wrap; tab-size: 4; line-height: 1.4;"></textarea>
+                                <div class="form-text">提示：代码题目请保持原始缩进格式，支持Tab键缩进</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 选择题选项存储 -->
+                        <div class="form-section question-type-options" id="choiceOptions" style="display: none;">
+                            <!-- 隐藏字段用于存储选项JSON -->
+                            <input type="hidden" name="options" id="optionsJson">
+                        </div>
+                        
+                        <!-- 答案设置 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-check-circle me-2"></i>答案设置
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">标准答案 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="answer" rows="4" 
+                                          placeholder="请输入标准答案..." required
+                                          style="font-family: 'Courier New', monospace; white-space: pre-wrap; tab-size: 4; line-height: 1.4;"></textarea>
+                                <div class="form-text">
+                                    <span id="answerHint">选择题请输入选项字母（如：A、B、C、D）</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 状态设置 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="fas fa-toggle-on me-2"></i>状态设置
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label">题目状态</label>
+                                <select class="form-select" name="status">
+                                    <option value="启用">启用</option>
+                                    <option value="禁用">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作按钮 -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-info" onclick="previewQuestion()">
+                                <i class="fas fa-eye me-2"></i>预览题目
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-2"></i>重置
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>保存题目
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- 预览面板 -->
+                <div class="preview-panel">
+                    <h5><i class="fas fa-eye me-2"></i>题目预览</h5>
+                    <div class="preview-content" id="previewContent">
+                        <p class="text-muted">选择题目类型后，这里将显示题目预览</p>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 题目类型变化处理
+        $('#questionType').on('change', function() {
+            const questionType = $(this).val();
+            updateFormByQuestionType(questionType);
+            
+            // 题目类型变化时，重置预览内容
+            if (questionType) {
+                $('#previewContent').html('<p class="text-muted">请填写题目内容和答案后查看预览</p>');
+            } else {
+                $('#previewContent').html('<p class="text-muted">选择题目类型后，这里将显示题目预览</p>');
+            }
+        });
+        
+        // 根据题目类型更新表单
+        function updateFormByQuestionType(questionType) {
+            // 隐藏所有选项
+            $('.question-type-options').removeClass('active');
+            
+            // 显示对应选项
+            switch(questionType) {
+                case 'C':
+                    $('#choiceOptions').addClass('active');
+                    $('#answerHint').text('选择题请输入正确答案（如：A、B、C、D）');
+                    break;
+                case 'F':
+                    $('#answerHint').text('填空题请输入标准答案，多个答案用分号分隔');
+                    $('#optionsJson').val('');
+                    break;
+                case 'R':
+                    $('#answerHint').text('程序运行结果题请输入程序运行结果');
+                    $('#optionsJson').val('');
+                    break;
+                case 'S':
+                    $('#answerHint').text('简答题请输入参考答案要点');
+                    $('#optionsJson').val('');
+                    break;
+                case 'P':
+                    $('#answerHint').text('编程题请输入代码或解题思路');
+                    $('#optionsJson').val('');
+                    break;
+                default:
+                    $('#answerHint').text('请选择题目类型');
+                    $('#optionsJson').val('');
+            }
+        }
+        
+
+        
+        // 预览题目
+        function previewQuestion() {
+            const questionType = $('#questionType').val();
+            const content = $('textarea[name="content"]').val();
+            const answer = $('textarea[name="answer"]').val();
+            
+            if (!questionType || !content || !answer) {
+                alert('请填写完整的题目信息');
+                return;
+            }
+            
+            let previewHtml = `
+                <div class="mb-3">
+                    <strong>题目类型:</strong> ${getQuestionTypeName(questionType)}
+                </div>
+            `;
+            
+            if (questionType === 'C') {
+                // 对于选择题，显示完整的题目内容（包括选项）
+                const fullContent = getFullQuestionContent(content);
+                previewHtml += `
+                    <div class="mb-3">
+                        <strong>题目内容:</strong><br>
+                        <div class="border rounded p-3 bg-light">
+                            <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${fullContent}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 对于非选择题，直接显示题目内容
+                previewHtml += `
+                    <div class="mb-3">
+                        <strong>题目内容:</strong><br>
+                        <div class="border rounded p-3 bg-light">
+                            <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${content}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewHtml += `
+                <div class="mb-3">
+                    <strong>标准答案:</strong><br>
+                    <div class="border rounded p-3 bg-light">
+                        <pre style="font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.4; tab-size: 4;">${answer}</pre>
+                    </div>
+                </div>
+            `;
+            
+            $('#previewContent').html(previewHtml);
+        }
+        
+        // 获取题目类型名称
+        function getQuestionTypeName(type) {
+            const typeNames = {
+                'C': '选择题',
+                'F': '填空题',
+                'R': '程序运行结果题',
+                'S': '简答题',
+                'P': '编程题'
+            };
+            return typeNames[type] || type;
+        }
+        
+        // 重置表单
+        function resetForm() {
+            if (confirm('确定要重置表单吗？所有填写的内容将丢失。')) {
+                $('#questionForm')[0].reset();
+                $('.question-type-options').removeClass('active');
+                $('#previewContent').html('<p class="text-muted">选择题目类型后，这里将显示题目预览</p>');
+                
+                // 重置选项标签
+                updateOptionLabels();
+            }
+        }
+        
+        // 表单提交验证
+        $('#questionForm').on('submit', function(e) {
+            const questionType = $('#questionType').val();
+            const content = $('textarea[name="content"]').val();
+            const answer = $('textarea[name="answer"]').val();
+            const subjectId = $('select[name="subjectId"]').val();
+            const difficulty = $('select[name="difficulty"]').val();
+            
+            console.log('表单提交验证开始', {questionType, content, answer, subjectId, difficulty});
+            
+            if (!subjectId) {
+                alert('请选择科目');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!questionType) {
+                alert('请选择题目类型');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!difficulty) {
+                alert('请选择难度级别');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!content.trim()) {
+                alert('请填写题目内容');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!answer.trim()) {
+                alert('请填写标准答案');
+                e.preventDefault();
+                return false;
+            }
+            
+            // 选择题特殊验证和选项处理
+            if (questionType === 'C') {
+                const content = $('textarea[name="content"]').val().trim();
+                const options = parseOptionsFromContent(content);
+                
+                console.log('选择题选项收集:', options);
+                
+                if (options.length < 2) {
+                    alert('选择题至少需要2个选项，请确保题目内容中包含选项（如：A. 选项A）');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 将选项转换为JSON格式并存储到隐藏字段
+                $('#optionsJson').val(JSON.stringify(options));
+                console.log('选项JSON:', JSON.stringify(options));
+            } else {
+                // 非选择题清空选项字段
+                $('#optionsJson').val('');
+            }
+            
+            console.log('表单验证通过，准备提交');
+            return true;
+        });
+        
+        // 实时预览更新
+        $('textarea[name="content"], textarea[name="answer"]').on('input', function() {
+            updatePreview();
+        });
+        
+        // 从题目内容中解析选项
+        function parseOptionsFromContent(content) {
+            const options = [];
+            const lines = content.split('\n');
+            
+            for (let line of lines) {
+                line = line.trim();
+                // 匹配 A. 选项内容 格式
+                const match = line.match(/^([A-Z])\.\s*(.+)$/);
+                if (match) {
+                    options.push(match[2]); // 只保存选项内容，不包含字母
+                }
+            }
+            
+            return options;
+        }
+        
+        // 获取完整的题目内容（包括选项），用于预览显示
+        function getFullQuestionContent(content) {
+            // 在预览时，我们显示用户输入的原始内容，这样可以看到完整的题目和选项
+            // 这个函数主要用于选择题的预览，确保用户能看到完整的题目内容
+            return content;
+        }
+        
+        // 将选项数组转换为空格分隔的字符串
+        function optionsToString(options) {
+            return options.join(' ');
+        }
+
+        // 初始化：根据当前选择的题型同步选项区状态
+        $(function() {
+            updateFormByQuestionType($('#questionType').val());
+        });
+        
+        function updatePreview() {
+            const questionType = $('#questionType').val();
+            if (questionType) {
+                // 只在有内容时才更新预览，避免触发验证提示
+                const content = $('textarea[name="content"]').val().trim();
+                const answer = $('textarea[name="answer"]').val().trim();
+                
+                if (content && answer) {
+                    previewQuestion();
+                } else {
+                    // 如果内容不完整，显示提示信息
+                    $('#previewContent').html('<p class="text-muted">请填写题目内容和答案后查看预览</p>');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 

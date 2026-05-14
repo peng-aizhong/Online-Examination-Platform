@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 考试系统</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container-fluid {
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
+        }
+        
+        .profile-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 25px;
+            width: 100%;
+        }
+        
+        .avatar-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .avatar-upload {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .avatar-upload input[type=file] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .btn-upload {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-upload:hover {
+            background: #0056b3;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+        }
+        
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            color: #212529;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+        
+        .section-title {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .page-header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 0 20px 30px 20px;
+        }
+        
+        .row {
+            margin: 0;
+        }
+        
+        .col-lg-10, .col-md-12, .col-sm-12 {
+            padding: 0;
+        }
+        
+        /* 修复空隙问题 */
+        .container-fluid .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .container-fluid .col-lg-10,
+        .container-fluid .col-md-12,
+        .container-fluid .col-sm-12 {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        
+        /* 确保内容区域没有多余边距 */
+        .main-content .container-fluid {
+            max-width: 100%;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 0 15px 20px 15px;
+            }
+            
+            .profile-section {
+                padding: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .page-header {
+                padding: 20px 0;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 0 10px 15px 10px;
+            }
+            
+            .profile-section {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            
+            .page-header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>
+                <i class="fas fa-user-circle me-3"></i>个人中心
+            </h1>
+            <p>管理您的个人信息和账户设置</p>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-lg-10 col-md-12 col-sm-12">
+                    <!-- 消息提示 -->
+                    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${success}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <!-- 头像上传区域 -->
+                    <div class="profile-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-camera me-2"></i>头像设置
+                        </h3>
+                        <div class="avatar-container">
+                            <img th:if="${user.avatar}" th:src="${user.avatar}" alt="用户头像" class="avatar-preview" 
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120/007bff/ffffff?text=头像'">
+                            <img th:unless="${user.avatar}" src="https://via.placeholder.com/120x120/007bff/ffffff?text=头像" alt="默认头像" class="avatar-preview">
+                            
+                            <form th:action="@{/profile/upload-avatar}" method="post" enctype="multipart/form-data" class="avatar-upload">
+                                <label class="btn-upload">
+                                    <i class="fas fa-upload me-2"></i>选择图片
+                                    <input type="file" name="avatar" accept="image/*" onchange="previewImage(this)">
+                                </label>
+                            </form>
+                            <p class="text-muted mt-2">支持 JPG、PNG 格式，文件大小不超过 5MB</p>
+                            <p class="text-muted small">提示：选择图片后将自动上传并更新头像</p>
+                        </div>
+                    </div>
+
+                    <!-- 基本信息管理 -->
+                    <div class="profile-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user me-2"></i>基本信息
+                        </h3>
+                        
+                        <!-- 只读信息 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <div class="info-label">用户ID</div>
+                                    <div class="info-value" th:text="${user.userId}"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <div class="info-label">用户名</div>
+                                    <div class="info-value" th:text="${user.username}"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <div class="info-label">角色</div>
+                                    <div class="info-value">
+                                        <span th:if="${user.role == 'admin'}" class="badge bg-danger">管理员</span>
+                                        <span th:if="${user.role == 'teacher'}" class="badge bg-primary">教师</span>
+                                        <span th:if="${user.role == 'student'}" class="badge bg-success">学生</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <div class="info-label">注册时间</div>
+                                    <div class="info-value" th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 可编辑信息 -->
+                        <form th:action="@{/profile/update}" method="post" th:object="${profileRequest}">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="department" class="form-label">部门/班级</label>
+                                    <input type="text" class="form-control" id="department" th:field="*{department}" 
+                                           th:value="${user.department}" placeholder="请输入部门或班级">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">邮箱</label>
+                                    <input type="email" class="form-control" id="email" th:field="*{email}" 
+                                           th:value="${user.email}" placeholder="请输入邮箱地址">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">手机号</label>
+                                    <input type="tel" class="form-control" id="phone" th:field="*{phone}" 
+                                           th:value="${user.phone}" placeholder="请输入手机号">
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>保存修改
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 密码修改 -->
+                    <div class="profile-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-lock me-2"></i>密码修改
+                        </h3>
+                        <form th:action="@{/profile/change-password}" method="post" th:object="${passwordRequest}">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="currentPassword" class="form-label">当前密码</label>
+                                    <input type="password" class="form-control" id="currentPassword" 
+                                           th:field="*{currentPassword}" placeholder="请输入当前密码">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPassword" class="form-label">新密码</label>
+                                    <input type="password" class="form-control" id="newPassword" 
+                                           th:field="*{newPassword}" placeholder="请输入新密码">
+                                    <div class="form-text">密码长度至少6个字符</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">确认新密码</label>
+                                    <input type="password" class="form-control" id="confirmPassword" 
+                                           th:field="*{confirmPassword}" placeholder="请再次输入新密码">
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-key me-2"></i>修改密码
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 返回按钮 -->
+                    <div class="text-center mt-4">
+                        <a th:href="@{/dashboard}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 头像预览功能
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    var preview = document.querySelector('.avatar-preview');
+                    preview.src = e.target.result;
+                    
+                    // 显示文件信息
+                    var fileInfo = document.createElement('div');
+                    fileInfo.className = 'alert alert-info mt-2';
+                    fileInfo.innerHTML = '<i class="fas fa-info-circle me-2"></i>已选择文件: ' + file.name + 
+                                       ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
+                    
+                    // 移除之前的文件信息
+                    var existingInfo = document.querySelector('.avatar-container .alert');
+                    if (existingInfo) {
+                        existingInfo.remove();
+                    }
+                    
+                    document.querySelector('.avatar-container').appendChild(fileInfo);
+                };
+                
+                reader.readAsDataURL(file);
+                
+                // 延迟提交表单，让用户看到预览
+                setTimeout(function() {
+                    input.closest('form').submit();
+                }, 1000);
+            }
+        }
+        
+        // 密码确认验证
+        document.getElementById('newPassword').addEventListener('input', function() {
+            var newPassword = this.value;
+            var confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (confirmPassword && newPassword !== confirmPassword) {
+                document.getElementById('confirmPassword').setCustomValidity('密码不匹配');
+            } else {
+                document.getElementById('confirmPassword').setCustomValidity('');
+            }
+        });
+        
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            var newPassword = document.getElementById('newPassword').value;
+            var confirmPassword = this.value;
+            
+            if (newPassword !== confirmPassword) {
+                this.setCustomValidity('密码不匹配');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试结果 - 考试系统</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .result-header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .score-excellent {
+            color: #28a745;
+        }
+
+        .score-good {
+            color: #17a2b8;
+        }
+
+        .score-pass {
+            color: #ffc107;
+        }
+
+        .score-fail {
+            color: #dc3545;
+        }
+        
+        .score-pending {
+            color: #6c757d;
+        }
+
+        .result-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .summary-item:first-child {
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .summary-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .question-result {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .question-score {
+            margin-left: auto;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .score-correct {
+            color: #28a745;
+        }
+
+        .score-incorrect {
+            color: #dc3545;
+        }
+
+        .question-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .answer-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .answer-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .correct-answer {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .student-answer {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .wrong-answer {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .option-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .option-item:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .option-item strong {
+            color: #495057;
+            margin-right: 8px;
+        }
+
+        .options-container {
+            margin-top: 10px;
+        }
+
+        .feedback {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            font-style: italic;
+        }
+
+        /* 代码格式化样式 */
+        .code-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .code-answer {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .code-student {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .code-correct {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+
+        .code-wrong {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+
+        .code-pending {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .pending-answer {
+            background: #fff3e0;
+            border: 1px solid #ffcc02;
+            color: #e65100;
+        }
+
+        .btn {
+            border-radius: 8px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/student">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 考试结果
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${user.username}">用户名</span>
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <!-- 消息提示 -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${success}">操作成功</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}">操作失败</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- 考试结果头部 -->
+        <div class="result-header">
+            <h2 th:text="${paper.paperName}">考试名称</h2>
+            <p class="text-muted" th:text="${paper.subject != null ? paper.subject.subjectName : '未知科目'}">科目名称</p>
+
+            <div class="score-display"
+                 th:classappend="${isGraded ? (session.totalScore >= 90 ? 'score-excellent' : (session.totalScore >= 80 ? 'score-good' : (session.totalScore >= 60 ? 'score-pass' : 'score-fail'))) : 'score-pending'}"
+                 th:text="${isGraded ? (session.totalScore != null ? session.totalScore + '分' : '未评分') : (isSubmitted ? '待评阅' : (session.status != null and session.status.name() == 'submitted' ? '待评阅' : '未评分'))}">85分</div>
+
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="text-muted">
+                        <i class="fas fa-clock me-2"></i>
+                        考试时长: <span th:text="${paper.duration}">120</span>分钟
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted">
+                        <i class="fas fa-calendar me-2"></i>
+                        考试时间: <span th:text="${session.startedAt != null ? #temporals.format(session.startedAt, 'yyyy-MM-dd HH:mm') : '未开始'}">2024-01-01 10:00</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted">
+                        <i class="fas fa-check me-2"></i>
+                        提交时间: <span th:text="${session.submittedAt != null ? #temporals.format(session.submittedAt, 'yyyy-MM-dd HH:mm') : '未提交'}">2024-01-01 12:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评分状态概览 -->
+        <div th:if="${!isGraded}" class="alert alert-warning" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-clock me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h5 class="mb-1">考试已提交，等待老师评阅</h5>
+                    <p class="mb-0">客观题已自动评分，主观题正在等待老师评阅。评阅完成后，您将看到完整的成绩和详细反馈。</p>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${isGraded}" class="alert alert-success" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h5 class="mb-1">考试已评阅完成</h5>
+                    <p class="mb-0">所有题目已评阅完毕，您可以查看详细的成绩分析和教师反馈。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成绩统计 -->
+        <div class="result-summary">
+            <h4 class="mb-4"><i class="fas fa-chart-bar me-2"></i>成绩统计</h4>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="summary-item">
+                        <div class="summary-number" th:text="${session.objectiveScore != null ? #numbers.formatDecimal(session.objectiveScore, 1, 1) : '0.0'}">60.0</div>
+                        <div class="summary-label">客观题得分</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-item">
+                        <div class="summary-number" th:text="${isGraded ? (session.subjectiveScore != null ? #numbers.formatDecimal(session.subjectiveScore, 1, 1) : '0.0') : '待评阅'}">25.0</div>
+                        <div class="summary-label">主观题得分</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-item">
+                        <div class="summary-number" th:text="${isGraded ? (session.totalScore != null ? #numbers.formatDecimal(session.totalScore, 1, 1) : '0.0') : (session.objectiveScore != null ? #numbers.formatDecimal(session.objectiveScore, 1, 1) + '+' : '0.0+')}">85.0</div>
+                        <div class="summary-label">总分</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-item">
+                        <div class="summary-number" th:text="${paper.totalScore}">100</div>
+                        <div class="summary-label">满分</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目详情 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0"><i class="fas fa-list me-2"></i>题目详情</h4>
+                    <div class="text-muted">
+                        <span class="badge bg-success me-2" th:text="${#lists.size(answers)}">总题数</span>
+                        <span th:if="${!isGraded}" class="badge bg-warning me-2" th:text="${#lists.size(answers.?[question.questionType == 'S' or question.questionType == 'E'])}">待评阅</span>
+                        <span th:if="${isGraded}" class="badge bg-success me-2">全部已评阅</span>
+                    </div>
+                </div>
+
+                <div th:each="answer, iterStat : ${answers}">
+                    <div class="question-result">
+                        <div class="question-header">
+                            <div class="question-number" th:text="${iterStat.index + 1}">1</div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">第 <span th:text="${iterStat.index + 1}">1</span> 题</h6>
+                                <!-- 题目类型和评分状态指示器 -->
+                                <div class="mt-1">
+                                    <span th:if="${answer.question != null and answer.question.questionType == 'C'}" 
+                                          class="badge bg-primary me-2">选择题</span>
+                                    <span th:if="${answer.question != null and answer.question.questionType == 'F'}" 
+                                          class="badge bg-success me-2">判断题</span>
+                                    <span th:if="${answer.question != null and answer.question.questionType == 'S'}" 
+                                          class="badge bg-warning me-2">简答题</span>
+                                    <span th:if="${answer.question != null and answer.question.questionType == 'E'}" 
+                                          class="badge bg-info me-2">论述题</span>
+                                    <span th:if="${answer.question != null and answer.question.questionType == 'P'}" 
+                                          class="badge bg-secondary me-2">编程题</span>
+                                    
+                                    <!-- 评分状态指示器 -->
+                                    <span th:if="${answer.question != null and answer.question.questionType != 'S' and answer.question.questionType != 'E'}" 
+                                          class="badge bg-success">已评分</span>
+                                    <span th:if="${answer.question != null and (answer.question.questionType == 'S' or answer.question.questionType == 'E') and answer.score != null}" 
+                                          class="badge bg-success">已评分</span>
+                                    <span th:if="${answer.question != null and (answer.question.questionType == 'S' or answer.question.questionType == 'E') and answer.score == null}" 
+                                          class="badge bg-warning">待评阅</span>
+                                </div>
+                            </div>
+                            <div class="question-score"
+                                 th:classappend="${answer.question != null and answer.question.questionType != 'S' and answer.question.questionType != 'E' ? (answer.score > 0 ? 'score-correct' : 'score-incorrect') : (answer.score != null ? (answer.score > 0 ? 'score-correct' : 'score-incorrect') : 'score-pending')}"
+                                 th:text="${answer.question != null and answer.question.questionType != 'S' and answer.question.questionType != 'E' ? (answer.score != null ? #numbers.formatDecimal(answer.score, 1, 1) + '分' : '0分') : (answer.score != null ? #numbers.formatDecimal(answer.score, 1, 1) + '分' : '待评阅')}">5分</div>
+                        </div>
+
+                        <div class="question-content" th:text="${answer.question != null ? answer.question.content : '题目内容'}">题目内容</div>
+
+                        <!-- 选择题选项显示 -->
+                        <div th:if="${answer.question != null and answer.question.questionType == 'C'}" class="answer-section">
+                            <div class="answer-label">选项:</div>
+                            <div class="options-container">
+                                <!-- 检查是否有单独的选项字段 -->
+                                <div th:if="${answer.question.optionA != null and answer.question.optionA != '' and answer.question.optionA != 'null'}">
+                                    <!-- 选项A -->
+                                    <div class="option-item">
+                                        <strong>A.</strong> <span th:text="${answer.question.optionA}">选项A内容</span>
+                            </div>
+                                    
+                                    <!-- 选项B -->
+                                    <div th:if="${answer.question.optionB != null and answer.question.optionB != '' and answer.question.optionB != 'null'}" 
+                                         class="option-item">
+                                        <strong>B.</strong> <span th:text="${answer.question.optionB}">选项B内容</span>
+                                    </div>
+                                    
+                                    <!-- 选项C -->
+                                    <div th:if="${answer.question.optionC != null and answer.question.optionC != '' and answer.question.optionC != 'null'}" 
+                                         class="option-item">
+                                        <strong>C.</strong> <span th:text="${answer.question.optionC}">选项C内容</span>
+                                    </div>
+                                    
+                                    <!-- 选项D -->
+                                    <div th:if="${answer.question.optionD != null and answer.question.optionD != '' and answer.question.optionD != 'null'}" 
+                                         class="option-item">
+                                        <strong>D.</strong> <span th:text="${answer.question.optionD}">选项D内容</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 如果没有单独的选项字段，尝试从content中解析 -->
+                                <div th:if="${answer.question.optionA == null or answer.question.optionA == '' or answer.question.optionA == 'null'}" 
+                                     class="option-item">
+                                    <div th:if="${answer.question.content != null}" 
+                                         th:utext="${#strings.replace(#strings.replace(#strings.replace(#strings.replace(answer.question.content, 'A.', '<strong>A.</strong>'), 'B.', '<strong>B.</strong>'), 'C.', '<strong>C.</strong>'), 'D.', '<strong>D.</strong>')}">
+                                        选项内容
+                                    </div>
+                                </div>
+                                
+                                <!-- 如果都没有，显示提示信息 -->
+                                <div th:if="${(answer.question.optionA == null or answer.question.optionA == '' or answer.question.optionA == 'null') and (answer.question.content == null or answer.question.content == '')}" 
+                                     class="option-item text-muted">
+                                    <em>暂无选项信息</em>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="answer-section">
+                            <div class="answer-label">正确答案:</div>
+                            <div th:if="${answer.question != null and answer.question.questionType == 'P'}" 
+                                 class="code-content code-answer" 
+                                 th:text="${answer.question.answer}">正确答案代码</div>
+                            <div th:unless="${answer.question != null and answer.question.questionType == 'P'}" 
+                                 class="correct-answer" 
+                                 th:text="${answer.question != null ? answer.question.answer : '正确答案'}">正确答案</div>
+                        </div>
+
+                        <div class="answer-section">
+                            <div class="answer-label">您的答案:</div>
+                            <div th:if="${answer.question != null and answer.question.questionType == 'P'}" 
+                                 class="code-content code-student"
+                                 th:classappend="${answer.question.questionType == 'S' or answer.question.questionType == 'E' ? (answer.score == null ? 'code-pending' : (answer.score == 0 ? 'code-wrong' : 'code-correct')) : (answer.score == 0 ? 'code-wrong' : 'code-correct')}"
+                                 th:text="${answer.answerText != null ? answer.answerText : '未作答'}">您的答案代码</div>
+                            <div th:unless="${answer.question != null and answer.question.questionType == 'P'}" 
+                                 class="student-answer"
+                                 th:classappend="${answer.question.questionType == 'S' or answer.question.questionType == 'E' ? (answer.score == null ? 'pending-answer' : (answer.score == 0 ? 'wrong-answer' : '')) : (answer.score == 0 ? 'wrong-answer' : '')}"
+                                 th:text="${answer.answerText != null ? answer.answerText : '未作答'}">您的答案</div>
+                            
+                            <!-- 主观题待评阅提示 -->
+                            <div th:if="${answer.question != null and (answer.question.questionType == 'S' or answer.question.questionType == 'E') and answer.score == null}" 
+                                 class="alert alert-info mt-2 mb-0">
+                                <i class="fas fa-clock me-2"></i>此题目正在等待老师评阅，请耐心等待
+                            </div>
+                        </div>
+
+                        <div th:if="${answer.feedback != null and answer.feedback != ''}" class="feedback">
+                            <div class="answer-label">教师反馈:</div>
+                            <div th:text="${answer.feedback}">教师反馈内容</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="text-center mt-4">
+            <a href="/student/exams/history" class="btn btn-primary me-3">
+                <i class="fas fa-history me-2"></i>返回历史记录
+            </a>
+            <a href="/student" class="btn btn-outline-primary">
+                <i class="fas fa-home me-2"></i>返回控制台
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

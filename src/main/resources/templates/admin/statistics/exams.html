@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试统计 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar-text {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #495057 !important;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057 !important;
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        
+        .stat-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+        
+        .stat-card.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .stat-card.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+        }
+        
+        .stat-card.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-graduation-cap me-2"></i>考试系统 - 管理员面板
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>
+                    <span th:text="${admin.username}">用户名</span>
+                    (管理员)
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3">管理功能</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">
+                                <i class="fas fa-tachometer-alt me-2"></i>控制台
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/subjects">
+                                <i class="fas fa-book me-2"></i>科目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/exams">
+                                <i class="fas fa-file-alt me-2"></i>考试管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/statistics">
+                                <i class="fas fa-chart-bar me-2"></i>系统统计
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 页面标题 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-file-alt me-2"></i>考试统计</h2>
+                    <div>
+                        <a href="/admin/statistics" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i>返回统计
+                        </a>
+                        <button class="btn btn-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt me-1"></i>刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 考试统计概览 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card success">
+                            <h3 th:text="${examStats.totalSessions}">0</h3>
+                            <p>总考试数</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card info">
+                            <h3 th:text="${examStats.completedSessions}">0</h3>
+                            <p>已完成考试</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card warning">
+                            <h3 th:text="${examStats.ongoingSessions}">0</h3>
+                            <p>进行中考试</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card danger">
+                            <h3 th:text="${examStats.averageScore}">0.0</h3>
+                            <p>平均分</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 考试状态分布和通过率 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>考试状态分布
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="examStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-percentage me-2"></i>通过率统计
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="passRateChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成绩分布 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>成绩分布
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="scoreDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 考试完成趋势 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>考试完成趋势
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="examCompletionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 科目考试统计 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>科目考试统计
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>科目名称</th>
+                                                <th>考试次数</th>
+                                                <th>平均分</th>
+                                                <th>最高分</th>
+                                                <th>最低分</th>
+                                                <th>通过率</th>
+                                                <th>参与人数</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="subject : ${subjectStats}">
+                                                <td th:text="${subject.subjectName}">科目名称</td>
+                                                <td th:text="${subject.examCount}">0</td>
+                                                <td th:text="${#numbers.formatDecimal(subject.averageScore, 1, 1)}">0.0</td>
+                                                <td th:text="${subject.maxScore}">0</td>
+                                                <td th:text="${subject.minScore}">0</td>
+                                                <td th:text="${#numbers.formatDecimal(subject.passRate, 1, 1)}">0.0</td>
+                                                <td th:text="${subject.participantCount}">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 刷新数据
+        function refreshData() {
+            location.reload();
+        }
+
+        // 考试状态分布饼图
+        const examStatusCtx = document.getElementById('examStatusChart').getContext('2d');
+        const examStatusChart = new Chart(examStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['已完成', '进行中', '未开始'],
+                datasets: [{
+                    data: [
+                        /*[[${examStats.completedSessions}]]*/ 0,
+                        /*[[${examStats.ongoingSessions}]]*/ 0,
+                        /*[[${examStats.notStartedSessions}]]*/ 0
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(108, 117, 125, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(40, 167, 69)',
+                        'rgb(255, 193, 7)',
+                        'rgb(108, 117, 125)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // 通过率统计柱状图
+        const passRateCtx = document.getElementById('passRateChart').getContext('2d');
+        const passRateChart = new Chart(passRateCtx, {
+            type: 'bar',
+            data: {
+                labels: ['通过', '未通过'],
+                datasets: [{
+                    label: '考试数量',
+                    data: [
+                        /*[[${examStats.passedExams}]]*/ 0,
+                        /*[[${examStats.failedExams}]]*/ 0
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(40, 167, 69)',
+                        'rgb(220, 53, 69)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 成绩分布柱状图
+        const scoreDistributionCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+        const scoreDistributionChart = new Chart(scoreDistributionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['0-20', '21-40', '41-60', '61-80', '81-100'],
+                datasets: [{
+                    label: '考试数量',
+                    data: [
+                        /*[[${scoreDistribution.range0to20}]]*/ 0,
+                        /*[[${scoreDistribution.range21to40}]]*/ 0,
+                        /*[[${scoreDistribution.range41to60}]]*/ 0,
+                        /*[[${scoreDistribution.range61to80}]]*/ 0,
+                        /*[[${scoreDistribution.range81to100}]]*/ 0
+                    ],
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: 'rgb(102, 126, 234)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 考试完成趋势线图
+        const examCompletionCtx = document.getElementById('examCompletionChart').getContext('2d');
+        const examCompletionChart = new Chart(examCompletionCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '完成考试数',
+                    data: [],
+                    borderColor: 'rgb(102, 126, 234)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 加载考试完成趋势数据
+        function loadExamCompletionTrend() {
+            fetch('/admin/statistics/api/trends/exams')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.date);
+                    const counts = data.map(item => item.count);
+                    
+                    examCompletionChart.data.labels = labels;
+                    examCompletionChart.data.datasets[0].data = counts;
+                    examCompletionChart.update();
+                })
+                .catch(error => console.error('Error loading exam completion trend:', error));
+        }
+
+        // 页面加载完成后加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExamCompletionTrend();
+        });
+    </script>
+</body>
+</html>

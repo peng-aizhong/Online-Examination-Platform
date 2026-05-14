@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传学习资源 - 考试系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .file-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #f8f9fa;
+        }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            margin-right: 15px;
+        }
+        
+        .file-type-pdf { background: #dc3545; }
+        .file-type-doc { background: #007bff; }
+        .file-type-ppt { background: #fd7e14; }
+        .file-type-video { background: #6f42c1; }
+        .file-type-audio { background: #20c997; }
+        .file-type-image { background: #28a745; }
+        .file-type-other { background: #6c757d; }
+        
+        .cover-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .cover-upload-area:hover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .cover-preview {
+            text-align: center;
+        }
+        
+        .cover-preview img {
+            max-width: 300px;
+            max-height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- 顶部操作栏 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-upload me-2"></i>上传学习资源</h2>
+                        <p class="text-muted">上传您的教学材料和学习资源</p>
+                    </div>
+                    <div>
+                        <a href="/teacher/resources" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回资源列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" action="/teacher/resources/upload" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-12">
+                    <div class="upload-card">
+                        <!-- 资源类型选择 -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-tags me-2"></i>资源类型
+                        </h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="btn-group w-100" role="group" aria-label="资源类型选择">
+                                    <input type="radio" class="btn-check" name="type" id="typeDocument" value="DOCUMENT" checked>
+                                    <label class="btn btn-outline-primary" for="typeDocument">
+                                        <i class="fas fa-file-alt me-2"></i>文档
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="type" id="typeVideo" value="VIDEO">
+                                    <label class="btn btn-outline-primary" for="typeVideo">
+                                        <i class="fas fa-video me-2"></i>视频
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="type" id="typeLink" value="LINK">
+                                    <label class="btn btn-outline-primary" for="typeLink">
+                                        <i class="fas fa-link me-2"></i>链接
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="type" id="typeImage" value="IMAGE">
+                                    <label class="btn btn-outline-primary" for="typeImage">
+                                        <i class="fas fa-image me-2"></i>图片
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 文件上传区域 -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>选择文件
+                        </h5>
+                        
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted" id="uploadTitle">拖拽文件到此处或点击选择文件</h5>
+                            <p class="text-muted mb-3" id="uploadDescription">支持所有文件类型，包括文档、图片、视频、音频、压缩包等</p>
+                            <input type="file" name="file" id="fileInput" class="d-none" accept="*/*">
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open me-2"></i>选择文件
+                            </button>
+                        </div>
+                        
+                        <!-- 链接输入区域 -->
+                        <div id="linkInputArea" class="mt-3" style="display: none;">
+                            <label class="form-label">外部链接</label>
+                            <input type="url" name="externalUrl" class="form-control" placeholder="请输入外部链接地址">
+                            <small class="text-muted">例如：https://www.example.com</small>
+                        </div>
+                        
+                        <!-- 文件预览 -->
+                        <div id="filePreview" class="file-preview" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <div class="file-icon" id="fileIcon">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1" id="fileName">文件名</h6>
+                                    <small class="text-muted" id="fileInfo">文件信息</small>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="upload-card">
+                        <!-- 封面图片上传 -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-image me-2"></i>封面图片
+                        </h5>
+                        
+                        <div class="cover-upload-area" id="coverUploadArea">
+                            <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                            <h6 class="text-muted">点击上传封面图片</h6>
+                            <p class="text-muted mb-3">支持 JPG、PNG、GIF 格式，建议尺寸 16:9</p>
+                            <input type="file" name="coverFile" id="coverInput" class="d-none" accept=".jpg,.jpeg,.png,.gif">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('coverInput').click()">
+                                <i class="fas fa-upload me-2"></i>选择封面
+                            </button>
+                        </div>
+                        
+                        <!-- 封面预览 -->
+                        <div id="coverPreview" class="cover-preview" style="display: none;">
+                            <img id="coverImage" src="" alt="封面预览" class="img-fluid rounded">
+                            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeCover()">
+                                <i class="fas fa-times me-1"></i>移除封面
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="upload-card">
+                        <!-- 资源信息 -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-info-circle me-2"></i>资源信息
+                        </h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label">资源标题</label>
+                                <input type="text" name="title" class="form-control" required 
+                                       placeholder="请输入资源标题">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">资源分类</label>
+                                <select name="category" class="form-select" required>
+                                    <option value="">请选择分类</option>
+                                    <option value="lecture">课件</option>
+                                    <option value="exercise">练习题</option>
+                                    <option value="reference">参考资料</option>
+                                    <option value="video">视频教程</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">适用科目</label>
+                                <select name="subjectId" class="form-select" required>
+                                    <option value="">请选择科目</option>
+                                    <option th:each="subject : ${subjects}" 
+                                            th:value="${subject.subjectId}" 
+                                            th:text="${subject.subjectName}">
+                                        科目名称
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">资源状态</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="ACTIVE">立即发布</option>
+                                    <option value="DRAFT">保存为草稿</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">资源描述</label>
+                            <textarea name="description" class="form-control" rows="4" 
+                                      placeholder="请输入资源描述，帮助学生了解资源内容"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">标签</label>
+                            <input type="text" name="tags" class="form-control" 
+                                   placeholder="请输入标签，用逗号分隔">
+                            <small class="text-muted">例如：Java基础,面向对象,编程入门</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="upload-card">
+                        <div class="text-end">
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="history.back()">
+                                <i class="fas fa-times me-1"></i>取消
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="fas fa-upload me-1"></i>上传资源
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileIcon = document.getElementById('fileIcon');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadTitle = document.getElementById('uploadTitle');
+        const uploadDescription = document.getElementById('uploadDescription');
+        const linkInputArea = document.getElementById('linkInputArea');
+        const coverInput = document.getElementById('coverInput');
+        const coverUploadArea = document.getElementById('coverUploadArea');
+        const coverPreview = document.getElementById('coverPreview');
+        const coverImage = document.getElementById('coverImage');
+
+        // 资源类型切换处理
+        document.querySelectorAll('input[name="type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateUploadArea();
+            });
+        });
+
+        // 更新上传区域
+        function updateUploadArea() {
+            const selectedType = document.querySelector('input[name="type"]:checked').value;
+            
+            switch(selectedType) {
+                case 'DOCUMENT':
+                    uploadTitle.textContent = '拖拽文档到此处或点击选择文件';
+                    uploadDescription.textContent = '支持 PDF、Word、PPT 等文档格式';
+                    fileInput.accept = '.pdf,.doc,.docx,.ppt,.pptx,.txt';
+                    linkInputArea.style.display = 'none';
+                    fileUploadArea.style.display = 'block';
+                    break;
+                case 'VIDEO':
+                    uploadTitle.textContent = '拖拽视频到此处或点击选择文件';
+                    uploadDescription.textContent = '支持 MP4、AVI、MOV 等视频格式';
+                    fileInput.accept = '.mp4,.avi,.mov,.wmv,.flv,.mkv';
+                    linkInputArea.style.display = 'none';
+                    fileUploadArea.style.display = 'block';
+                    break;
+                case 'LINK':
+                    uploadTitle.textContent = '输入外部链接';
+                    uploadDescription.textContent = '请输入要分享的外部链接地址';
+                    linkInputArea.style.display = 'block';
+                    fileUploadArea.style.display = 'none';
+                    filePreview.style.display = 'none';
+                    break;
+                case 'IMAGE':
+                    uploadTitle.textContent = '拖拽图片到此处或点击选择文件';
+                    uploadDescription.textContent = '支持 JPG、PNG、GIF 等图片格式';
+                    fileInput.accept = '.jpg,.jpeg,.png,.gif,.bmp,.webp';
+                    linkInputArea.style.display = 'none';
+                    fileUploadArea.style.display = 'block';
+                    break;
+            }
+            
+            // 重置文件输入
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+            updateSubmitButton();
+        }
+
+        // 文件选择处理
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showFilePreview(file);
+            }
+        });
+
+        // 封面图片选择处理
+        coverInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showCoverPreview(file);
+            }
+        });
+
+        // 拖拽上传
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                showFilePreview(files[0]);
+            }
+        });
+
+        // 显示文件预览
+        function showFilePreview(file) {
+            fileName.textContent = file.name;
+            fileInfo.textContent = `${formatFileSize(file.size)} | ${file.type || '未知类型'}`;
+            
+            // 设置文件图标
+            const fileType = getFileType(file.name);
+            fileIcon.className = `file-icon file-type-${fileType}`;
+            fileIcon.innerHTML = `<i class="fas ${getFileIcon(fileType)}"></i>`;
+            
+            filePreview.style.display = 'block';
+            updateSubmitButton();
+        }
+
+        // 显示封面预览
+        function showCoverPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                coverImage.src = e.target.result;
+                coverPreview.style.display = 'block';
+                coverUploadArea.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 移除文件
+        function removeFile() {
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+            updateSubmitButton();
+        }
+
+        // 移除封面
+        function removeCover() {
+            coverInput.value = '';
+            coverPreview.style.display = 'none';
+            coverUploadArea.style.display = 'block';
+        }
+
+        // 获取文件类型
+        function getFileType(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (['pdf'].includes(ext)) return 'pdf';
+            if (['doc', 'docx'].includes(ext)) return 'doc';
+            if (['ppt', 'pptx'].includes(ext)) return 'ppt';
+            if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'].includes(ext)) return 'video';
+            if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+            if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) return 'image';
+            return 'other';
+        }
+
+        // 获取文件图标
+        function getFileIcon(fileType) {
+            const icons = {
+                'pdf': 'fa-file-pdf',
+                'doc': 'fa-file-word',
+                'ppt': 'fa-file-powerpoint',
+                'video': 'fa-file-video',
+                'audio': 'fa-file-audio',
+                'image': 'fa-file-image',
+                'other': 'fa-file'
+            };
+            return icons[fileType] || 'fa-file';
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 更新提交按钮状态
+        function updateSubmitButton() {
+            const selectedType = document.querySelector('input[name="type"]:checked').value;
+            let canSubmit = false;
+            
+            if (selectedType === 'LINK') {
+                const externalUrl = document.querySelector('input[name="externalUrl"]').value;
+                canSubmit = externalUrl.trim() !== '';
+            } else {
+                canSubmit = fileInput.files.length > 0;
+            }
+            
+            submitBtn.disabled = !canSubmit;
+        }
+
+        // 监听链接输入
+        document.querySelector('input[name="externalUrl"]').addEventListener('input', updateSubmitButton);
+
+        // 初始化
+        updateUploadArea();
+    </script>
+</body>
+</html> 
