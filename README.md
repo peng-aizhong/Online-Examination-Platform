@@ -144,6 +144,12 @@ exam-system/
 2. **学生端**: 查看可参加的考试 → 开始考试 → 答题（自动保存） → 提交试卷
 3. **评分**: 客观题自动评分，主观题由教师评阅后出最终成绩
 
+## 系统截图
+
+<img src="screenshots/1.png" width="49%" /> <img src="screenshots/2.png" width="49%" />
+<img src="screenshots/3.png" width="49%" /> <img src="screenshots/4.png" width="49%" />
+<img src="screenshots/5.png" width="49%" /> <img src="screenshots/6.png" width="49%" />
+
 ## 注意事项
 
 - 该项目为学习用途，密码存储使用了明文（`PlainTextPasswordEncoder`），生产环境请替换为 `BCryptPasswordEncoder`

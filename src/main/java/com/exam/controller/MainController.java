@@ -163,4 +163,21 @@ public class MainController {
         session.invalidate();
         return "redirect:/";
     }
+
+    @GetMapping("/error")
+    public String error(@RequestParam(value = "accessDenied", required = false) String accessDenied,
+                        @RequestParam(value = "message", required = false) String message,
+                        Model model) {
+        if (accessDenied != null) {
+            model.addAttribute("errorTitle", "访问被拒绝");
+            model.addAttribute("error", "权限不足，您没有权限访问此页面");
+        } else if (message != null) {
+            model.addAttribute("errorTitle", "错误");
+            model.addAttribute("error", message);
+        } else {
+            model.addAttribute("errorTitle", "系统错误");
+            model.addAttribute("error", "系统发生未知错误");
+        }
+        return "error";
+    }
 } 
